@@ -13,7 +13,11 @@ class Tokenizer:
         current_token = ""
         if(self.position == len(self.origin)):
             new_token = Token("EOF", "EOF")
+            self.actual = new_token
             return new_token
+
+        while ( (self.position < len(self.origin)) and self.origin[self.position] == ' '):
+            self.position += 1
 
         while ( (self.position < len(self.origin) ) and (self.origin[self.position]).isdigit()):
             current_token += self.origin[self.position]
@@ -24,16 +28,14 @@ class Tokenizer:
             if(aux == "+"):
                 new_token = Token("PLUS", "+")
                 self.position += 1
+                self.actual = new_token
                 return new_token
                 
             elif(aux == "-"):
                 new_token = Token("MINUS", "-")
                 self.position += 1
+                self.actual = new_token
                 return new_token
-
-            elif(aux == " "):
-                self.position += 1
-                return self.selectNext()
 
             else:
                 raise ValueError("Invalid Token", aux)
@@ -50,26 +52,25 @@ class Parser:
         res = None
         if(Parser.tokens.actual.type == "INT"):
             res = Parser.tokens.actual.value
-            current_token = Parser.tokens.selectNext()
-            while(current_token.type == "PLUS" or current_token.type == "MINUS"):
-                if(current_token.type == "PLUS"):
-                    current_token = Parser.tokens.selectNext()
-                    if(current_token.type == "INT"):
-                        res += current_token.value
+            Parser.tokens.selectNext()
+            while(Parser.tokens.actual.type == "PLUS" or Parser.tokens.actual.type == "MINUS"):
+                if(Parser.tokens.actual.type == "PLUS"):
+                    Parser.tokens.selectNext()
+                    if(Parser.tokens.actual.type == "INT"):
+                        res += Parser.tokens.actual.value
                     else:
-                        raise ValueError("Next token is invalid", current_token.type)
+                        raise ValueError("Next token is invalid", Parser.tokens.actual.type)
                     
-                elif(current_token.type == "MINUS"):
-                    current_token = Parser.tokens.selectNext()
-                    if(current_token.type == "INT"):
-                        res -= current_token.value
+                elif(Parser.tokens.actual.type == "MINUS"):
+                    Parser.tokens.selectNext()
+                    if(Parser.tokens.actual.type == "INT"):
+                        res -= Parser.tokens.actual.value
                     else:
-                        raise ValueError("Next token is invalid", current_token.type)
-                
-                current_token = Parser.tokens.selectNext()
+                        raise ValueError("Next token is invalid", Parser.tokens.actual.type)
+
+                Parser.tokens.selectNext()
         else:
-            raise ValueError("First token is invalid", current_token.type)
-        print(current_token.type)
+            raise ValueError("First token is invalid", Parser.tokens.actual.type)
         return res
     
     def run(code):
@@ -77,5 +78,5 @@ class Parser:
         return Parser.parseExpression()
 
 
-#teste = "2 + 3 * 5"
-#print(Parser.run(teste))
+teste = input("Digite a expressao: ")
+print(Parser.run(teste))
