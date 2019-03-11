@@ -50,6 +50,18 @@ class Tokenizer:
                 self.actual = new_token
                 return new_token
 
+            elif(aux == "("):
+                new_token = Token("(", "(")
+                self.position += 1
+                self.actual = new_token
+                return new_token
+
+            elif(aux == ")"):
+                new_token = Token(")", ")")
+                self.position += 1
+                self.actual = new_token 
+                return new_token
+
             else:
                 raise ValueError("Invalid Token", aux)
 
@@ -71,29 +83,48 @@ class Parser:
         return res
 
     def parseTerm():
-        res = None
+        res = Parser.parseFactor()
+        while(Parser.tokens.actual.type == "MULT" or Parser.tokens.actual.type == "DIV"):
+            if(Parser.tokens.actual.type == "MULT"):
+                Parser.tokens.selectNext()
+                res *= Parser.parseFactor()
+            elif(Parser.tokens.actual.type == "DIV"):
+                Parser.tokens.selectNext()
+                res = res//Parser.parseFactor()
+        return res
+    
+    def parseFactor():
+        res = 0
         if(Parser.tokens.actual.type == "INT"):
             res = Parser.tokens.actual.value
             Parser.tokens.selectNext()
-            while(Parser.tokens.actual.type == "MULT" or Parser.tokens.actual.type == "DIV"):
-                if(Parser.tokens.actual.type == "MULT"):
-                    Parser.tokens.selectNext()
-                    if(Parser.tokens.actual.type == "INT"):
-                        res *= Parser.tokens.actual.value
-                    else:
-                        raise ValueError("Next token is invalid", Parser.tokens.actual.type)
+            return res
 
-                elif(Parser.tokens.actual.type == "DIV"):
-                    Parser.tokens.selectNext()
-                    if(Parser.tokens.actual.type == "INT"):
-                        res = res // Parser.tokens.actual.value
-                    else:
-                        raise ValueError("Next token is invalid", Parser.tokens.actual.type)
-
+        elif(Parser.tokens.actual.type == "("):
+            Parser.tokens.selectNext()
+            res = Parser.parseExpression()
+            if(Parser.tokens.actual.type == ")"):
                 Parser.tokens.selectNext()
+                return res
+            else:
+                raise ValueError("Invalid Sintax, Missing ')'")
+
+        elif(Parser.tokens.actual.type == "MINUS" or Parser.tokens.actual.type == "PLUS"):
+            if(Parser.tokens.actual.type == "MINUS"):
+                Parser.tokens.selectNext()
+                res -= Parser.parseFactor()
+                return res
+            elif(Parser.tokens.actual.type == "PLUS"):
+                Parser.tokens.selectNext()
+                res += Parser.parseFactor()
+                return res
+            else:
+                raise ValueError("Invalid Token, expecting INT, received: ", Parser.tokens.actual.type)
+
         else:
-            raise ValueError("First token is invalid", Parser.tokens.actual.type)
-        return res
+            raise ValueError("Invalid Token: ", Parser.tokens.actual.type)
+            
+        
 
     def run(code):
         code = PrePro.filter(code)
