@@ -217,10 +217,5 @@ class PrePro():
 
         return code
 
-
-
-
-
-
 teste = input("Digite a expressao: ")
 print(Parser.run(teste).Evaluate())
