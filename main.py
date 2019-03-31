@@ -41,7 +41,7 @@ class Statements(Node):
 
     def Evaluate(self, symbolTable): #receber SymbolTable
         for children in self.children:
-            children.Evaluate()
+            children.Evaluate(symbolTable)
 
 
 class BinOp(Node):
@@ -49,37 +49,37 @@ class BinOp(Node):
         self.value = value
         self.children = children
 
-    def Evaluate(self):
+    def Evaluate(self, symbolTable):
         if(self.value == "PLUS"):
-            return self.children[0].Evaluate() + self.children[1].Evaluate()
+            return self.children[0].Evaluate(symbolTable) + self.children[1].Evaluate(symbolTable)
             
         elif(self.value == "MINUS"):
-            return self.children[0].Evaluate() - self.children[1].Evaluate()
+            return self.children[0].Evaluate(symbolTable) - self.children[1].Evaluate(symbolTable)
         
         elif(self.value == "MULT"):
-            return self.children[0].Evaluate() * self.children[1].Evaluate()
+            return self.children[0].Evaluate(symbolTable) * self.children[1].Evaluate(symbolTable)
         
         elif(self.value == "DIV"):
-            return self.children[0].Evaluate() // self.children[1].Evaluate()
+            return self.children[0].Evaluate(symbolTable) // self.children[1].Evaluate(symbolTable)
 
 class UnOp(Node):
     def __init__(self, value, children):
         self.value = value
         self.children = children
 
-    def Evaluate(self):
+    def Evaluate(self, symbolTable):
         if(self.value == "MINUS"):
-            return -self.children[0].Evaluate()
+            return -self.children[0].Evaluate(symbolTable)
 
         if(self.value == "PLUS"):
-            return +self.children[0].Evaluate()
+            return +self.children[0].Evaluate(symbolTable)
 
 class IntVal(Node):
     def __init__(self, value, children):
         self.value = value
         self.children = children
     
-    def Evaluate(self):
+    def Evaluate(self, symbolTable):
         return self.value
 
 class NoOp(Node):
@@ -87,7 +87,7 @@ class NoOp(Node):
         self.value = value
         self.children = children
     
-    def Evaluate(self):
+    def Evaluate(self, symbolTable):
         pass
 
 class Token:
@@ -260,8 +260,8 @@ class Parser:
                 raise ValueError("Invalid Token, expecting INT, received: ", Parser.tokens.actual.type)
 
         elif(Parser.tokens.actual.type == "IDENTIFIER"):
-            Parser.tokens.selectNext()
             new_node = Identifier(Parser.tokens.actual.value, [])
+            Parser.tokens.selectNext()
             return new_node
 
         else:
@@ -276,7 +276,6 @@ class Parser:
         #Devo criar um Node do Begin?
         #Como vou adicionando a children (Checo se não é END ou se nao
         #é \n?
-        statements = Statements(None, None)
         children = []
         if(Parser.tokens.actual.type == "BEGIN"):
             Parser.tokens.selectNext()
@@ -284,13 +283,19 @@ class Parser:
                 Parser.tokens.selectNext()
                 while(Parser.tokens.actual.value != "END"):
                     child = Parser.parseStatement()
+                    print(child)
+                    print("---------------------")
                     children.append(child)
-                
-        # for 
+                    if(Parser.tokens.actual.type == "EOL"):
+                        Parser.tokens.selectNext()
+                statements = Statements(None, children)
+                Parser.tokens.selectNext() 
+                if(Parser.tokens.actual.type == "EOL"):
+                    Parser.tokens.selectNext()
+                return statements
     
     @staticmethod
     def parseStatement():
-        res = None
         if(Parser.tokens.actual.type == "IDENTIFIER"):
             child1 = Identifier(Parser.tokens.actual.value, [])
             Parser.tokens.selectNext()
@@ -306,11 +311,6 @@ class Parser:
             return Parser.parseStatements()
         else:
             return
-
-            
-
-
-
         
     @staticmethod
     def run(code):
@@ -348,11 +348,6 @@ class SymbolTable:
 teste = "teste"
 with open(f"{teste}.vbs") as file:
     data = file.read() + '\n'
-print(Parser.run(data).Evaluate())
-
-# tokenizer 
-# Parser
-# node statments 0 ou + filhos
-# node assigment 2 filhos
-# node identifier 0 filhos
-# isalpha
+symbolTable = SymbolTable()
+res = Parser.run(data)
+res.Evaluate(symbolTable)
