@@ -283,8 +283,6 @@ class Parser:
                 Parser.tokens.selectNext()
                 while(Parser.tokens.actual.value != "END"):
                     child = Parser.parseStatement()
-                    print(child)
-                    print("---------------------")
                     children.append(child)
                     if(Parser.tokens.actual.type == "EOL"):
                         Parser.tokens.selectNext()
@@ -316,8 +314,6 @@ class Parser:
     def run(code):
         code = PrePro.filter(code)
         Parser.tokens = Tokenizer(code)
-        print("------------------------")
-        # res = Parser.parseExpression()
         res = Parser.parseStatements()
         if(Parser.tokens.actual.type == "EOF"):
             return res
@@ -326,7 +322,7 @@ class Parser:
 class PrePro():
     @staticmethod
     def filter(text):
-        code = re.sub("'.*\n", "", data)
+        code = re.sub("'.*\n", "\n", data)
         return code
 
 class SymbolTable:

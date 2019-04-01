@@ -1,8 +1,9 @@
-Begin
+Begin 'teste comentario
     x = 3
+    z = x * 5
     Begin
-        y = 3 + 3
+        y = (3 + 3)/2
         Print y
     End
-    Print y
+    Print z
 End
