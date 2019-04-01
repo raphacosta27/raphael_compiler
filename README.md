@@ -1,3 +1,4 @@
 # raphael_compiler
 Repositório para desenvolvimento do compilador da matéria de Lógica da Computação.
-![Diagrama Sintatico](https://github.com/raphacosta27/raphael_compiler/blob/master/DS3.png)
+![Diagrama Sintatico, parte 1](DSp1.png)
+![Diagrama Sintatico, parte 2](DSp2.png)

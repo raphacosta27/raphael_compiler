@@ -4,82 +4,45 @@ class Node: #abstract
         self.value = None
         self.children = None
     
-    def Evaluate(self, symbolTable):
+    def Evaluate(self):
         pass
-
-class Identifier(Node):
-    def __init__(self, value, children):
-        self.value = value
-        self.children = children
-
-    def Evaluate(self, symbolTable): #receber SymbolTable
-        return symbolTable.get(self.value)
-
-class Assignment(Node):
-    def __init__(self, value, children):
-        self.value = value
-        self.children = children
-
-    def Evaluate(self, symbolTable): #receber SymbolTable
-        children2 = self.children[1].Evaluate(symbolTable)
-        symbolTable.set(self.children[0].value, children2)
-        return 
-
-class Print(Node):
-    def __init__(self, value, children):
-        self.value = value
-        self.children = children
-
-    def Evaluate(self, symbolTable): #receber SymbolTable
-        print(self.children[0].Evaluate(symbolTable))
-        return 
-
-class Statements(Node):
-    def __init__(self, value, children):
-        self.value = value
-        self.children = children
-
-    def Evaluate(self, symbolTable): #receber SymbolTable
-        for children in self.children:
-            children.Evaluate(symbolTable)
-
 
 class BinOp(Node):
     def __init__(self, value, children):
         self.value = value
         self.children = children
 
-    def Evaluate(self, symbolTable):
+    def Evaluate(self):
         if(self.value == "PLUS"):
-            return self.children[0].Evaluate(symbolTable) + self.children[1].Evaluate(symbolTable)
+            return self.children[0].Evaluate() + self.children[1].Evaluate()
             
         elif(self.value == "MINUS"):
-            return self.children[0].Evaluate(symbolTable) - self.children[1].Evaluate(symbolTable)
+            return self.children[0].Evaluate() - self.children[1].Evaluate()
         
         elif(self.value == "MULT"):
-            return self.children[0].Evaluate(symbolTable) * self.children[1].Evaluate(symbolTable)
+            return self.children[0].Evaluate() * self.children[1].Evaluate()
         
         elif(self.value == "DIV"):
-            return self.children[0].Evaluate(symbolTable) // self.children[1].Evaluate(symbolTable)
+            return self.children[0].Evaluate() // self.children[1].Evaluate()
 
 class UnOp(Node):
     def __init__(self, value, children):
         self.value = value
         self.children = children
 
-    def Evaluate(self, symbolTable):
+    def Evaluate(self):
         if(self.value == "MINUS"):
-            return -self.children[0].Evaluate(symbolTable)
+            return -self.children[0].Evaluate()
 
         if(self.value == "PLUS"):
-            return +self.children[0].Evaluate(symbolTable)
+            return +self.children[0].Evaluate()
 
 class IntVal(Node):
     def __init__(self, value, children):
         self.value = value
         self.children = children
     
-    def Evaluate(self, symbolTable):
+    def Evaluate(self):
         return self.value
 
 class NoOp(Node):
@@ -87,7 +50,7 @@ class NoOp(Node):
         self.value = value
         self.children = children
     
-    def Evaluate(self, symbolTable):
+    def Evaluate(self):
         pass
 
 class Token:
@@ -103,21 +66,30 @@ class Tokenizer:
 
     def selectNext(self):
         current_token = ""
+        isNumber = False
 
-        #Verifica se nao esta no final do arquivo
+        while ( (self.position < len(self.origin)) and self.origin[self.position] == ' '):
+            self.position += 1
+
         if(self.position == len(self.origin)):
             new_token = Token("EOF", "EOF")
             self.actual = new_token
             return new_token
 
-        #maquina de estados de procurar os tokens
-        while ( self.position < len(self.origin) ):
+        while ( (self.position < len(self.origin) ) and (self.origin[self.position]).isdigit()):
+            current_token += self.origin[self.position]
+            self.position += 1
 
+        while ( (self.position < len(self.origin) ):
+            if(self.origin[self.origin].isdigit()):
+                #identifica numero
+            elif(self.origin[self.origin].isalpha()):
+                #identifica variable
+            elif    
+        
+        if(len(current_token) == 0):
             aux = self.origin[self.position]
-            if(aux == ' '):
-                self.position += 1
-
-            elif(aux == "+"):
+            if(aux == "+"):
                 new_token = Token("PLUS", "+")
                 self.position += 1
                 self.actual = new_token
@@ -159,20 +131,15 @@ class Tokenizer:
                 self.actual = new_token 
                 return new_token
 
-            elif(aux.isdigit()):
-                while ( (self.position < len(self.origin) ) and (self.origin[self.position]).isdigit()):
-                    current_token += self.origin[self.position]
-                    self.position += 1
-                
+            else:
+                raise ValueError("Invalid Token", aux)
+
+        else:
+            if(isNumber):
                 new_token = Token("INT", int(current_token))
                 self.actual = new_token
                 return new_token
-
-            elif(aux.isalpha()):
-                while ( (self.position < len(self.origin)) and ( self.origin[self.position].isalpha() or self.origin[self.position].isdigit() or self.origin[self.position] == '_') ):
-                    current_token += self.origin[self.position]
-                    self.position += 1
-                
+            else:
                 if(current_token.upper() == "BEGIN"):
                     new_token = Token("BEGIN", "BEGIN")
                     self.actual = new_token
@@ -181,24 +148,6 @@ class Tokenizer:
                     new_token = Token("END", "END")
                     self.actual = new_token
                     return new_token
-                elif(current_token.upper() == "PRINT"):
-                    new_token = Token("PRINT", "PRINT")
-                    self.actual = new_token
-                    return new_token
-                else:
-                    new_token = Token("IDENTIFIER", current_token)
-                    self.actual = new_token
-                    return new_token
-
-            elif(aux == "\n"):
-                new_token = Token("EOL", "\n")
-                self.position += 1
-                self.actual = new_token
-                return new_token
-
-            else:
-                raise ValueError("Invalid Token", aux)
-
 
 class Parser:
     @staticmethod
@@ -259,65 +208,16 @@ class Parser:
             else:
                 raise ValueError("Invalid Token, expecting INT, received: ", Parser.tokens.actual.type)
 
-        elif(Parser.tokens.actual.type == "IDENTIFIER"):
-            new_node = Identifier(Parser.tokens.actual.value, [])
-            Parser.tokens.selectNext()
-            return new_node
-
         else:
             raise ValueError("Invalid Token: ", Parser.tokens.actual.type)
-    
-    @staticmethod
-    def parseStatements():
-        #Criar statements node e ir appendando filhos do tipo statement
-        #a medida que passando por coisas que nao forem END
-
-        #devo criar um token do tipo \n???
-        #Devo criar um Node do Begin?
-        #Como vou adicionando a children (Checo se não é END ou se nao
-        #é \n?
-        children = []
-        if(Parser.tokens.actual.type == "BEGIN"):
-            Parser.tokens.selectNext()
-            if(Parser.tokens.actual.type == "EOL"):
-                Parser.tokens.selectNext()
-                while(Parser.tokens.actual.value != "END"):
-                    child = Parser.parseStatement()
-                    children.append(child)
-                    if(Parser.tokens.actual.type == "EOL"):
-                        Parser.tokens.selectNext()
-                statements = Statements(None, children)
-                Parser.tokens.selectNext() 
-                if(Parser.tokens.actual.type == "EOL"):
-                    Parser.tokens.selectNext()
-                return statements
-        else:
-            raise ValueError("Waiting for Begin, received: ", Parser.tokens.actual.type)
-    
-    @staticmethod
-    def parseStatement():
-        if(Parser.tokens.actual.type == "IDENTIFIER"):
-            child1 = Identifier(Parser.tokens.actual.value, [])
-            Parser.tokens.selectNext()
-            if(Parser.tokens.actual.type == "ASSIGNMENT"):
-                Parser.tokens.selectNext()
-                new_node = Assignment("=", [child1, Parser.parseExpression()]) 
-                return new_node
-        elif(Parser.tokens.actual.type == "PRINT"):
-            Parser.tokens.selectNext()
-            print_node = Print("Print", [Parser.parseExpression()])
-            return print_node
-        elif(Parser.tokens.actual.type == "BEGIN"): #nao consumo, portanto nao tem selectNext()
-            return Parser.parseStatements()
-        else:
-            new_node = NoOp(None, [])
-            return
+            
         
     @staticmethod
     def run(code):
         code = PrePro.filter(code)
+        # print(len(code))
         Parser.tokens = Tokenizer(code)
-        res = Parser.parseStatements()
+        res = Parser.parseExpression()
         if(Parser.tokens.actual.type == "EOF"):
             return res
         else:
@@ -325,28 +225,22 @@ class Parser:
 class PrePro():
     @staticmethod
     def filter(text):
-        code = re.sub("'.*\n", "\n", data)
+        code = re.sub("'.*\n", "", data)
+        print(code)
         return code
 
-class SymbolTable:
-    def __init__(self):
-        self.symbolTable = {}
-    
-    def get(self, name):
-        if(self.symbolTable[name]):
-            return self.symbolTable[name]
-        else:
-            raise ValueError(name, " does not exists") 
-    
-    def set(self, name, value):
-        self.symbolTable[name] = value
-        return 1
+# class SymbolTable():
     
 
-# teste = input("Filename: ")
-teste = "teste"
+teste = input("Filename: ")
 with open(f"{teste}.vbs") as file:
-    data = file.read() + '\n'
-symbolTable = SymbolTable()
-res = Parser.run(data)
-res.Evaluate(symbolTable)
+    data = file.read()
+
+print(Parser.run(data).Evaluate())
+
+# tokenizer 
+# Parser
+# node statments 0 ou + filhos
+# node assigment 2 filhos
+# node identifier 0 filhos
+# isalpha
