@@ -291,6 +291,8 @@ class Parser:
                 if(Parser.tokens.actual.type == "EOL"):
                     Parser.tokens.selectNext()
                 return statements
+        else:
+            raise ValueError("Waiting for Begin, received: ", Parser.tokens.actual.type)
     
     @staticmethod
     def parseStatement():
@@ -308,6 +310,7 @@ class Parser:
         elif(Parser.tokens.actual.type == "BEGIN"): #nao consumo, portanto nao tem selectNext()
             return Parser.parseStatements()
         else:
+            new_node = NoOp(None, [])
             return
         
     @staticmethod
