@@ -1,9 +1,5 @@
-Begin 'teste comentario
-    x = 3
-    z = x * 5
-    Begin
-        y = (3 + 3)/2
-        Print y
-    End
-    Print z
-End
+x = 0
+while x < 3
+    x = x + 1
+    Print x
+Wend
