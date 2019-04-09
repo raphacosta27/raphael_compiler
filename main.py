@@ -74,7 +74,7 @@ class Input(Node):
         self.children = children
         
     def Evaluate(self, symbolTable):
-        pass
+        return int(input())
 
 class BinOp(Node):
     def __init__(self, value, children):
@@ -395,7 +395,7 @@ class Parser:
         
         #implementar
         elif(Parser.tokens.actual.type == "INPUT"):
-            new_node = Identifier(Parser.tokens.actual.value, [])
+            new_node = Input("Input", [])
             Parser.tokens.selectNext()
             return new_node
 
