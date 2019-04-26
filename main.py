@@ -38,7 +38,7 @@ class Print(Node):
         print(self.children[0].Evaluate(symbolTable))
         return 
 
-class Statements(Node):
+class Program(Node):
     def __init__(self, value, children):
         self.value = value
         self.children = children
@@ -53,6 +53,8 @@ class While(Node):
         self.children = children
     
     def Evaluate(self, symbolTable):
+        #!Trocar evaluate pq agr recebe listas dentro de listas
+        #e nao mais um no do tipo Statements pra so dar Evaluate
         while self.children[0].Evaluate(symbolTable): #garantir que retorna true
             self.children[1].Evaluate(symbolTable)
 
@@ -66,7 +68,8 @@ class If(Node):
             self.children[1].Evaluate(symbolTable)
         else:
             if(len(self.children) == 3):
-                self.children[2].Evaluate(symbolTable)
+                self.children[2].Evaluate(symbolTable) #!Trocar evaluate pq agr recebe listas dentro de listas
+                                                        #e nao mais um no do tipo Statements pra so dar Evaluate
 
 class Input(Node):
     def __init__(self, value, children):
@@ -139,6 +142,30 @@ class NoOp(Node):
     
     def Evaluate(self, symbolTable):
         pass
+    
+class Type(Node):
+    def __init__(self, value, children):
+        self.value = value
+        self.children = children
+    
+    def Evaluate(self, symbolTable):
+        return self.value
+
+class BoolVal(Node):
+    def __init__(self, value, children):
+        self.value = value
+        self.children = children
+    
+    def Evaluate(self, symbolTable):
+        return self.value
+
+class VarDec(Node):
+    def __init__(self, value, children):
+        self.value = value
+        self.children = children
+    
+    def Evaluate(self, symbolTable):
+        return self.value #Nao sei o que retorna!
 
 class Token:
     def __init__(self, t, v,):
@@ -294,6 +321,46 @@ class Tokenizer:
                     new_token = Token("NOT", "NOT")
                     self.actual = new_token
                     return new_token
+                
+                elif(current_token.upper() == "SUB"):
+                    new_token = Token("SUB", "SUB")
+                    self.actual = new_token
+                    return new_token
+
+                elif(current_token.upper() == "MAIN"):
+                    new_token = Token("MAIN", "MAIN")
+                    self.actual = new_token
+                    return new_token
+
+                elif(current_token.upper() == "INTEGER"):
+                    new_token = Token("TYPE", "INTEGER")
+                    self.actual = new_token
+                    return new_token
+
+                elif(current_token.upper() == "BOOLEAN"):
+                    new_token = Token("TYPE", "BOOLEAN")
+                    self.actual = new_token
+                    return new_token
+                
+                elif(current_token.upper() == "DIM"):
+                    new_token = Token("DIM", "DIM")
+                    self.actual = new_token
+                    return new_token
+
+                elif(current_token.upper() == "AS"):
+                    new_token = Token("AS", "AS")
+                    self.actual = new_token
+                    return new_token
+                
+                elif(current_token.upper() == "TRUE"):
+                    new_token = Token("BOOL", "TRUE")
+                    self.actual = new_token
+                    return new_token
+                
+                elif(current_token.upper() == "FALSE"):
+                    new_token = Token("BOOL", "FALSE")
+                    self.actual = new_token
+                    return new_token
 
                 else:
                     new_token = Token("IDENTIFIER", current_token)
@@ -362,7 +429,7 @@ class Parser:
 
         elif(Parser.tokens.actual.type == "("):
             Parser.tokens.selectNext()
-            new_node = Parser.parseExpression()
+            new_node = Parser.parseRelExpression()
             if(Parser.tokens.actual.type == ")"):
                 Parser.tokens.selectNext()
                 return new_node
@@ -398,25 +465,55 @@ class Parser:
             new_node = Input("Input", [])
             Parser.tokens.selectNext()
             return new_node
+        
+        elif(Parser.tokens.actual.type == "BOOL"):
+            new_node = BoolVal(Parser.tokens.actual.value, [])
+            Parser.tokens.selectNext()
+            return new_node
 
         else:
             raise ValueError("Invalid Token: ", Parser.tokens.actual.type)
     
     @staticmethod
-    def parseStatements():
+    def parseProgram():
         children = []
-        while(True):
-            child = Parser.parseStatement()
-            children.append(child)
-            if(Parser.tokens.actual.type == "EOL"):
+        if(Parser.tokens.actual.type == "SUB"):
+            Parser.tokens.selectNext()
+            if(Parser.tokens.actual.type == "MAIN"):
                 Parser.tokens.selectNext()
+                if(Parser.tokens.actual.type == "("):
+                    Parser.tokens.selectNext()
+                    if(Parser.tokens.actual.type == ")"):
+                        Parser.tokens.selectNext()
+                        if(Parser.tokens.actual.type == "EOL"):
+                            Parser.tokens.selectNext()
+                            while(True):
+                                if(Parser.tokens.actual.type == "END"):
+                                    Parser.tokens.selectNext()
+                                    break
+                                child = Parser.parseStatement()
+                                children.append(child)
+                                if(Parser.tokens.actual.type == "EOL"):
+                                    Parser.tokens.selectNext()
 
-            if(Parser.tokens.actual.type == "EOF" or Parser.tokens.actual.type == "END" or Parser.tokens.actual.type == "WEND"):
-                break
-            
+                            if(Parser.tokens.actual.type == "SUB"):
+                                Parser.tokens.selectNext()
 
-        statements = Statements(None, children)
-        return statements
+        program = Program(None, children)
+        return program
+
+    @staticmethod
+    def parseType():
+        if(Parser.tokens.actual.type == "INTEGER"):
+            Parser.tokens.selectNext()
+            new_node = Type("INTEGER", "INTEGER")
+            return new_node
+        elif(Parser.tokens.actual.type == "BOOLEAN"):
+            Parser.tokens.selectNext()
+            new_node = Type("BOOLEAN", "BOOLEAN")
+            return new_node
+        else:
+            raise ValueError("Type not supported")
     
     @staticmethod
     def parseStatement():
@@ -425,26 +522,31 @@ class Parser:
             Parser.tokens.selectNext()
             if(Parser.tokens.actual.type == "ASSIGNMENT"):
                 Parser.tokens.selectNext()
-                new_node = Assignment("=", [child1, Parser.parseExpression()]) 
+                new_node = Assignment("=", [child1, Parser.parseRelExpression()]) 
                 return new_node
 
         elif(Parser.tokens.actual.type == "PRINT"):
             Parser.tokens.selectNext()
-            print_node = Print("Print", [Parser.parseExpression()])
+            print_node = Print("Print", [Parser.parseRelExpression()])
             return print_node
         
         elif(Parser.tokens.actual.type == "WHILE"):
+            children = []
             Parser.tokens.selectNext()
             relExp = Parser.parseRelExpression()
+            children.append(relExp)
             if(Parser.tokens.actual.type == "EOL"):
                     Parser.tokens.selectNext()
-            statements = Parser.parseStatements()
-            if(Parser.tokens.actual.type == "WEND"):
-                Parser.tokens.selectNext()
-                while_node = While("WHILE", [relExp, statements])
-                return while_node
-            else:
-                raise ValueError("Expecting WEND, got: ", Parser.tokens.actual.type)
+            
+            while(Parser.tokens.actual.type != "WEND"):
+                child = Parser.parseStatement()
+                children.append(child)
+                if(Parser.tokens.actual.type == "EOL"):
+                    Parser.tokens.selectNext()
+            
+            Parser.tokens.selectNext()
+            while_node = While("WHILE", children)
+            return while_node
 
         elif(Parser.tokens.actual.type == "IF"):
             children = []
@@ -456,28 +558,37 @@ class Parser:
                 Parser.tokens.selectNext()
                 if(Parser.tokens.actual.type == "EOL"):
                     Parser.tokens.selectNext()
-                    statements = Parser.parseStatements()
-                    children.append(statements)
-
-                if(Parser.tokens.actual.type == "ELSE"):
-                    statements2 = Parser.parseStatements()
-                    children.append(statements2)
-
-                if(Parser.tokens.actual.type == "END"):
-                    Parser.tokens.selectNext()
+                
+                    while(Parser.tokens.actual.type != "ELSE" or Parser.tokens.actual.type != "END"):
+                        if_children = []
+                        child = Parser.parseStatement()
+                        if_children.append(child)
+                        if(Parser.tokens.actual.type == "EOL"):
+                            Parser.tokens.selectNext()
+                
+                    if(Parser.tokens.actual.type == "ELSE"):
+                        while(Parser.tokens.actual.type != "END"):
+                            else_children = []
+                            child = Parser.parseStatement()
+                            else_children.append(child)
+                            if(Parser.tokens.actual.type == "EOL"):
+                                Parser.tokens.selectNext()
+                                
+                    Parser.tokens.selectNext() #Consumir o END que ja foi verificado nos whiles
                     if(Parser.tokens.actual.type == "IF"):
                         Parser.tokens.selectNext()
                         if_node = If("IF", children)
                         return if_node
 
-                    else:
-                        raise ValueError("Expecting IF after END, got: ", Parser.tokens.actual.type)
-                        
-                else:
-                    raise ValueError("Expecting ELSE or END, got: ", Parser.tokens.actual.type)
-
-            else:
-                raise ValueError("Expecting THEN after while declaration")
+        elif(Parser.tokens.actual.type == "DIM"):
+            Parser.tokens.selectNext()
+            if(Parser.tokens.actual.type == "IDENTIFIER"):
+                ident_node = Identifier(Parser.tokens.actual.value, [])
+                Parser.tokens.selectNext()
+                if(Parser.tokens.actual.type == "AS"):
+                    Parser.tokens.selectNext()
+                    type_node = Parser.parseType()
+                    return VarDec(None, [ident_node, type_node])
 
         else:
             new_node = NoOp(None, [])
@@ -508,7 +619,7 @@ class Parser:
     def run(code):
         code = PrePro.filter(code)
         Parser.tokens = Tokenizer(code)
-        res = Parser.parseStatements()
+        res = Parser.parseProgram()
         if(Parser.tokens.actual.type == "EOF"):
             return res
         else:
