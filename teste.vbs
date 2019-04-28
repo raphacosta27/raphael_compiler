@@ -1,7 +1,7 @@
 Sub Main()
-Dim x as Integer
+Dim x as Boolean
 Dim y as Integer
-x = 6
+x = True
 while x < 10
     x = x + 1
 Wend

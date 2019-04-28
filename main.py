@@ -46,7 +46,7 @@ class Assignment(Node):
         elif(currentType == "INTEGER" and relExp[1] == "INTEGER"):
             symbolTable.setValue(self.children[0].value, relExp[0])
         else:
-            raise ValueError(f"Can't assign value to {self.children[0].value}, types do not match")
+            raise ValueError(f"Can't assign value {relExp[0]} to {self.children[0].value}, types do not match")
         # symbolTable.set(self.children[0].value, children2)
         return 1
 
@@ -293,7 +293,7 @@ class BoolVal(Node):
         self.children = children
     
     def Evaluate(self, symbolTable):
-        return self.value
+        return (self.value, "BOOLEAN")
 
 class VarDec(Node):
     """
@@ -597,6 +597,16 @@ class Parser:
             else:
                 raise ValueError("Invalid Token, expecting INT, received: ", Parser.tokens.actual.type)
 
+        elif(Parser.tokens.actual.type == "BOOL"):
+            if(Parser.tokens.actual.value == "TRUE"):
+                new_node = BoolVal(True, None)
+                Parser.tokens.selectNext()
+                return new_node
+            elif(Parser.tokens.actual.value == "FALSE"):
+                new_node = BoolVal(False, None)
+                Parser.tokens.selectNext()
+                return new_node
+
         elif(Parser.tokens.actual.type == "IDENTIFIER"):
             new_node = Identifier(Parser.tokens.actual.value, [])
             Parser.tokens.selectNext()
@@ -650,7 +660,7 @@ class Parser:
             Parser.tokens.selectNext()
             new_node = Type("INTEGER", "INTEGER")
             return new_node
-        elif(Parser.tokens.actual.type == "BOOLEAN" and Parser.tokens.actual.value == "BOOLEAN"):
+        elif(Parser.tokens.actual.type == "TYPE" and Parser.tokens.actual.value == "BOOLEAN"):
             Parser.tokens.selectNext()
             new_node = Type("BOOLEAN", "BOOLEAN")
             return new_node
