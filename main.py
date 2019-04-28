@@ -16,7 +16,7 @@ class Identifier(Node):
     """
     Value: name of the identifier
     Children: None
-    Evaluate: Returns 'value' value and type inside symbolTable
+    Evaluate: Returns its value
     """
     def __init__(self, value, children):
         self.value = value
@@ -41,10 +41,10 @@ class Assignment(Node):
     def Evaluate(self, symbolTable): #receber SymbolTable
         relExp = self.children[1].Evaluate(symbolTable)
         currentType = symbolTable.get(self.children[0].value)[1] #Cobre o erro de nao existir 
-        if(currentType == "Boolean" and isinstance(relExp, bool)): #Cobre erro de unmatch de tipos
-            symbolTable.setValue(self.children[0].value, relExp)
-        elif(currentType == "Integer" and isinstance(relExp, int)):
-            symbolTable.setValue(self.children[0].value, relExp)
+        if(currentType == "BOOLEAN" and relExp[1] == "BOOLEAN"): #Cobre erro de unmatch de tipos
+            symbolTable.setValue(self.children[0].value, relExp[0])
+        elif(currentType == "INTEGER" and relExp[1] == "INTEGER"):
+            symbolTable.setValue(self.children[0].value, relExp[0])
         else:
             raise ValueError(f"Can't assign value to {self.children[0].value}, types do not match")
         # symbolTable.set(self.children[0].value, children2)
@@ -61,7 +61,7 @@ class Print(Node):
         self.children = children
 
     def Evaluate(self, symbolTable): #receber SymbolTable
-        print(self.children[0].Evaluate(symbolTable))
+        print(self.children[0].Evaluate(symbolTable)[0])
         return 
 
 class Program(Node):
@@ -93,8 +93,8 @@ class While(Node):
     def Evaluate(self, symbolTable):
         #!Trocar evaluate pq agr recebe listas dentro de listas
         #e nao mais um no do tipo Statements pra so dar Evaluate
-        if(self.children[0].Evaluate(symbolTable)[1] == "Boolean"):
-            while self.children[0].Evaluate(symbolTable): #garantir que retorna true
+        if(self.children[0].Evaluate(symbolTable)[1] == "BOOLEAN"):
+            while self.children[0].Evaluate(symbolTable)[0]: #garantir que retorna true
                 for child in self.children[1]:
                     child.Evaluate(symbolTable)
         else:
@@ -115,7 +115,8 @@ class If(Node):
         self.children = children
     
     def Evaluate(self, symbolTable):
-        if(self.children[0].Evaluate(symbolTable)[1] == "Boolean"):
+        child0 = self.children[0].Evaluate(symbolTable)
+        if(child0[1] == "BOOLEAN"):
             if(self.children[0].Evaluate(symbolTable)[0]):
                 for child in self.children[1]:
                     child.Evaluate(symbolTable)
@@ -140,7 +141,7 @@ class Input(Node):
         try:
             return int(input())
         except:
-            raise ValueError("Input can't accepts values that are not Integer")
+            raise ValueError("Input can't accepts values that are not INTEGER")
 
 class BinOp(Node):
     """
@@ -156,58 +157,58 @@ class BinOp(Node):
         child0 = self.children[0].Evaluate(symbolTable)
         child1 = self.children[1].Evaluate(symbolTable)
         if(self.value == "PLUS"):
-            if(child0[1] == "Integer" and child1[1] == "Integer"):
-                return child0[0] + child1[0]
+            if(child0[1] == "INTEGER" and child1[1] == "INTEGER"):
+                return (child0[0] + child1[0], "INTEGER")
             else:
-                raise ValueError("Can't sum two not integers values")
+                raise ValueError("Can't sum two not INTEGERs values")
             
         elif(self.value == "MINUS"):
-            if(child0[1] == "Integer" and child1[1] == "Integer"):
-                return child0[0] - child1[0]
+            if(child0[1] == "INTEGER" and child1[1] == "INTEGER"):
+                return (child0[0] - child1[0], "INTEGER")
             else:
-                raise ValueError("Can't subtract two not integers values")
+                raise ValueError("Can't subtract two not INTEGERs values")
         
         elif(self.value == "MULT"):
-            if(child0[1] == "Integer" and child1[1] == "Integer"):
-                return child0[0] * child1[0]
+            if(child0[1] == "INTEGER" and child1[1] == "INTEGER"):
+                return (child0[0] * child1[0], "INTEGER")
             else:
-                raise ValueError("Can't multiply two not integers values")
+                raise ValueError("Can't multiply two not INTEGERs values")
         
         elif(self.value == "DIV"):
-            if(child0[1] == "Integer" and child1[1] == "Integer"):
-                return child0[0] // child1[0]
+            if(child0[1] == "INTEGER" and child1[1] == "INTEGER"):
+                return (child0[0] // child1[0], "INTEGER")
             else:
-                raise ValueError("Can't divide two not integers values")
+                raise ValueError("Can't divide two not INTEGERs values")
         
         elif(self.value == "GREATERTHAN"):
-            if(child0[1] == "Integer" and child1[1] == "Integer"):
-                return child0[0] > child1[0]
+            if(child0[1] == "INTEGER" and child1[1] == "INTEGER"):
+                return (child0[0] > child1[0], "BOOLEAN")
             else:
-                raise ValueError("Can't compare two not integer values")
+                raise ValueError("Can't compare two not INTEGER values")
         
         elif(self.value == "LESSTHAN"):
-            if(child0[1] == "Integer" and child1[1] == "Integer"):
-                return child0[0] < child1[0]
+            if(child0[1] == "INTEGER" and child1[1] == "INTEGER"):
+                return (child0[0] < child1[0], "BOOLEAN")
             else:
-                raise ValueError("Can't compare two not integer values")
+                raise ValueError("Can't compare two not INTEGER values")
 
         elif(self.value == "OR"):
-            if(child0[1] == "Boolean" and child1[1] == "Boolean"):
-                return child0[0] or child1[0]
+            if(child0[1] == "BOOLEAN" and child1[1] == "BOOLEAN"):
+                return (child0[0] or child1[0], "BOOLEAN")
             else:
-                raise ValueError("Can't compare two not Boolean values")
+                raise ValueError("Can't compare two not BOOLEAN values")
         
         elif(self.value == "AND"):
-            if(child0[1] == "Boolean" and child1[1] == "Boolean"):
-                return child0[0] and child1[0]
+            if(child0[1] == "BOOLEAN" and child1[1] == "BOOLEAN"):
+                return (child0[0] and child1[0], "BOOLEAN")
             else:
-                raise ValueError("Can't compare two not Boolean values")
+                raise ValueError("Can't compare two not BOOLEAN values")
         
         elif(self.value == "EQUAL"):
             if(child0[1] == child1[1]):
-                return child0[0] == child1[0]
+                return (child0[0] == child1[0], "BOOLEAN")
             else:
-                raise ValueError("Can't compare Integer with Boolean")
+                raise ValueError("Can't compare INTEGER with BOOLEAN")
 
 class UnOp(Node):
     """
@@ -222,19 +223,19 @@ class UnOp(Node):
     def Evaluate(self, symbolTable):
         child = self.children[0].Evaluate(symbolTable)
         if(self.value == "MINUS"):
-            if(child[1] == "Integer"):
+            if(child[1] == "INTEGER"):
                 return [-child[0], child[1]]
             else:
                 raise ValueError("Invalid type for operation MINUS")
 
         elif(self.value == "PLUS"):
-            if(child[1] == "Integer"):
+            if(child[1] == "INTEGER"):
                 return [+child[0], child[1]]
             else:
                 raise ValueError("Invalid type for operation PLUS")
         
         elif(self.value == "NOT"):
-            if(child[1] == "Boolean"):
+            if(child[1] == "BOOLEAN"):
                 return [not child[0], child[1]]
             else:
                 raise ValueError("Invalid type for operation NOT")
@@ -251,7 +252,7 @@ class IntVal(Node):
     
     def Evaluate(self, symbolTable):
         if(isinstance(self.value, int)):
-            return [self.value, "Integer"]
+            return [self.value, "INTEGER"]
         else:
             raise ValueError(f"Value: {self.value} not valid")
 
@@ -270,7 +271,7 @@ class NoOp(Node):
     
 class Type(Node):
     """
-    Value: Boolean | Integer)
+    Value: BOOLEAN | INTEGER)
     Children: None
     Evaluate: returns its value
     """
@@ -295,7 +296,8 @@ class BoolVal(Node):
         return self.value
 
 class VarDec(Node):
-     """Variable Declaration:
+    """
+        Variable Declaration
         Value: None
         Children: 2 (0: Identifier, 1: Type)
         Evaluate: create the identifier key and its type inside SymbolTable
@@ -305,7 +307,7 @@ class VarDec(Node):
         self.children = children
     
     def Evaluate(self, symbolTable):
-        symbolTable.create(self.children[0].Evaluate(symbolTable), self.children[1].Evaluate(symbolTable))
+        symbolTable.create(self.children[0].value, self.children[1].Evaluate(symbolTable))
 
 class Token:
     def __init__(self, t, v,):
@@ -644,11 +646,11 @@ class Parser:
 
     @staticmethod
     def parseType():
-        if(Parser.tokens.actual.type == "INTEGER"):
+        if(Parser.tokens.actual.type == "TYPE" and Parser.tokens.actual.value == "INTEGER"):
             Parser.tokens.selectNext()
             new_node = Type("INTEGER", "INTEGER")
             return new_node
-        elif(Parser.tokens.actual.type == "BOOLEAN"):
+        elif(Parser.tokens.actual.type == "BOOLEAN" and Parser.tokens.actual.value == "BOOLEAN"):
             Parser.tokens.selectNext()
             new_node = Type("BOOLEAN", "BOOLEAN")
             return new_node
@@ -656,7 +658,7 @@ class Parser:
             raise ValueError("Type not supported")
     
     @staticmethod
-def parseStatement():
+    def parseStatement():
         if(Parser.tokens.actual.type == "IDENTIFIER"):
             child1 = Identifier(Parser.tokens.actual.value, [])
             Parser.tokens.selectNext()
@@ -678,13 +680,15 @@ def parseStatement():
             if(Parser.tokens.actual.type == "EOL"):
                     Parser.tokens.selectNext()
             
+            statements = []
             while(Parser.tokens.actual.type != "WEND"):
                 child = Parser.parseStatement()
-                children.append(child)
+                statements.append(child)
                 if(Parser.tokens.actual.type == "EOL"):
                     Parser.tokens.selectNext()
             
             Parser.tokens.selectNext()
+            children.append(statements)
             while_node = While("WHILE", children)
             return while_node
 
@@ -698,17 +702,19 @@ def parseStatement():
                 Parser.tokens.selectNext()
                 if(Parser.tokens.actual.type == "EOL"):
                     Parser.tokens.selectNext()
-                
-                    while(Parser.tokens.actual.type != "ELSE" or Parser.tokens.actual.type != "END"):
-                        if_children = []
+                    if_children = []
+                    else_children = []
+                    while(Parser.tokens.actual.type != "ELSE" and Parser.tokens.actual.type != "END"):
                         child = Parser.parseStatement()
                         if_children.append(child)
                         if(Parser.tokens.actual.type == "EOL"):
                             Parser.tokens.selectNext()
-                
+                    
                     if(Parser.tokens.actual.type == "ELSE"):
+                        Parser.tokens.selectNext()
+                        if(Parser.tokens.actual.type == "EOL"):
+                            Parser.tokens.selectNext()
                         while(Parser.tokens.actual.type != "END"):
-                            else_children = []
                             child = Parser.parseStatement()
                             else_children.append(child)
                             if(Parser.tokens.actual.type == "EOL"):
@@ -717,6 +723,10 @@ def parseStatement():
                     Parser.tokens.selectNext() #Consumir o END que ja foi verificado nos whiles
                     if(Parser.tokens.actual.type == "IF"):
                         Parser.tokens.selectNext()
+                        if(len(if_children) > 0):
+                            children.append(if_children)
+                        if(len(else_children) > 0):
+                            children.append(else_children)
                         if_node = If("IF", children)
                         return if_node
 
@@ -790,7 +800,7 @@ class SymbolTable:
             raise ValueError(name, " does not exists") 
     
     """
-    If name exists, creates name: [None, type] inside symbol Table
+    If name exists, creates {name: [None, type]} inside symbol Table
     Else, raise error
     """
     def create(self, name, type):
@@ -819,7 +829,7 @@ else:
 
 
 with open(file_name) as file:
-    data = file.read() + '\n'
+    data = file.read()
 symbolTable = SymbolTable()
 res = Parser.run(data)
 res.Evaluate(symbolTable)

@@ -1,9 +1,9 @@
-x = 0
-while x < 3
+Sub Main()
+Dim x as Integer
+Dim y as Integer
+x = 6
+while x < 10
     x = x + 1
-    Print x
 Wend
-If x = 3 then
-    y = Input
-    Print x+y
-End if
+Print x
+End Sub
