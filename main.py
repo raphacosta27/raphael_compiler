@@ -1,6 +1,10 @@
+#O parser tem de retornar os tipos tb?
 import re
 import sys
 class Node: #abstract
+    """
+    DO NOT CREATE A NODE OBJECT, this class defines what a node is.
+    """
     def __init__(self):
         self.value = None
         self.children = None
@@ -9,6 +13,11 @@ class Node: #abstract
         pass
 
 class Identifier(Node):
+    """
+    Value: name of the identifier
+    Children: None
+    Evaluate: Returns 'value' value and type inside symbolTable
+    """
     def __init__(self, value, children):
         self.value = value
         self.children = children
@@ -20,16 +29,33 @@ class Identifier(Node):
             raise ValueError("Identifier: ", self.value, " does not exists")
 
 class Assignment(Node):
+    """
+    Value: None
+    Children: 2 (0: Identifier, 1: RelExpression)
+    Evaluate: sets 'identifier' value in symbolTable with value 'RelExpression'
+    """
     def __init__(self, value, children):
         self.value = value
         self.children = children
 
     def Evaluate(self, symbolTable): #receber SymbolTable
-        children2 = self.children[1].Evaluate(symbolTable)
-        symbolTable.set(self.children[0].value, children2)
-        return 
+        relExp = self.children[1].Evaluate(symbolTable)
+        currentType = symbolTable.get(self.children[0].value)[1] #Cobre o erro de nao existir 
+        if(currentType == "Boolean" and isinstance(relExp, bool)): #Cobre erro de unmatch de tipos
+            symbolTable.setValue(self.children[0].value, relExp)
+        elif(currentType == "Integer" and isinstance(relExp, int)):
+            symbolTable.setValue(self.children[0].value, relExp)
+        else:
+            raise ValueError(f"Can't assign value to {self.children[0].value}, types do not match")
+        # symbolTable.set(self.children[0].value, children2)
+        return 1
 
 class Print(Node):
+    """
+    Value: None
+    Children: 1 (0: RelExpression)
+    Evaluate: print on terminal children[0].Evaluate()
+    """
     def __init__(self, value, children):
         self.value = value
         self.children = children
@@ -39,6 +65,12 @@ class Print(Node):
         return 
 
 class Program(Node):
+    """ 
+    Value: None
+    Children: All nodes from AST
+    Evaluate: for each child in children:
+                child.Evaluate()
+    """
     def __init__(self, value, children):
         self.value = value
         self.children = children
@@ -48,6 +80,12 @@ class Program(Node):
             children.Evaluate(symbolTable)
 
 class While(Node):
+    """
+    Value: None
+    Children: 2 (0: BinOp, 1: [Statements])
+    Evaluate: while children[0].Evaluate() == True:
+                children[1].Evaluate()
+    """
     def __init__(self, value, children):
         self.value = value
         self.children = children
@@ -55,87 +93,174 @@ class While(Node):
     def Evaluate(self, symbolTable):
         #!Trocar evaluate pq agr recebe listas dentro de listas
         #e nao mais um no do tipo Statements pra so dar Evaluate
-        while self.children[0].Evaluate(symbolTable): #garantir que retorna true
-            self.children[1].Evaluate(symbolTable)
+        if(self.children[0].Evaluate(symbolTable)[1] == "Boolean"):
+            while self.children[0].Evaluate(symbolTable): #garantir que retorna true
+                for child in self.children[1]:
+                    child.Evaluate(symbolTable)
+        else:
+            raise ValueError("Invalid type for while clause")
 
 class If(Node):
+    """
+    Value: None
+    Children: 2 without else statement (0: BinOp, 1: Statements) | 
+              3 with else statement    (0: BinOp, 1: Statements, 2: Statements)
+    Evaluate: If children[0].Evaluate() == True
+                children[1].Evaluate()
+              Else, if children[2] exists:
+                children[2].Evaluate()
+    """
     def __init__(self, value, children):
         self.value = value
         self.children = children
     
     def Evaluate(self, symbolTable):
-        if(self.children[0].Evaluate(symbolTable)):
-            self.children[1].Evaluate(symbolTable)
+        if(self.children[0].Evaluate(symbolTable)[1] == "Boolean"):
+            if(self.children[0].Evaluate(symbolTable)[0]):
+                for child in self.children[1]:
+                    child.Evaluate(symbolTable)
+            else:
+                if(len(self.children) == 3):
+                    for child in self.children[2]:
+                        child.Evaluate(symbolTable)
         else:
-            if(len(self.children) == 3):
-                self.children[2].Evaluate(symbolTable) #!Trocar evaluate pq agr recebe listas dentro de listas
-                                                        #e nao mais um no do tipo Statements pra so dar Evaluate
+            raise ValueError("Invalid type for while clause")
+
 
 class Input(Node):
+    """
+    Value: None
+    Children: 0
+    Evaluate: Get terminal input
+    """
     def __init__(self, value, children):
         self.value = value
         self.children = children
-        
     def Evaluate(self, symbolTable):
-        return int(input())
+        try:
+            return int(input())
+        except:
+            raise ValueError("Input can't accepts values that are not Integer")
 
 class BinOp(Node):
+    """
+    Value: Operation
+    Children: 2 (0: RelExpression, 1: RelExpression)
+    Evaluate: returns children[0].Evaluate Operation children[1].Evaluate
+    """
     def __init__(self, value, children):
         self.value = value
         self.children = children
 
     def Evaluate(self, symbolTable):
+        child0 = self.children[0].Evaluate(symbolTable)
+        child1 = self.children[1].Evaluate(symbolTable)
         if(self.value == "PLUS"):
-            return self.children[0].Evaluate(symbolTable) + self.children[1].Evaluate(symbolTable)
+            if(child0[1] == "Integer" and child1[1] == "Integer"):
+                return child0[0] + child1[0]
+            else:
+                raise ValueError("Can't sum two not integers values")
             
         elif(self.value == "MINUS"):
-            return self.children[0].Evaluate(symbolTable) - self.children[1].Evaluate(symbolTable)
+            if(child0[1] == "Integer" and child1[1] == "Integer"):
+                return child0[0] - child1[0]
+            else:
+                raise ValueError("Can't subtract two not integers values")
         
         elif(self.value == "MULT"):
-            return self.children[0].Evaluate(symbolTable) * self.children[1].Evaluate(symbolTable)
+            if(child0[1] == "Integer" and child1[1] == "Integer"):
+                return child0[0] * child1[0]
+            else:
+                raise ValueError("Can't multiply two not integers values")
         
         elif(self.value == "DIV"):
-            return self.children[0].Evaluate(symbolTable) // self.children[1].Evaluate(symbolTable)
+            if(child0[1] == "Integer" and child1[1] == "Integer"):
+                return child0[0] // child1[0]
+            else:
+                raise ValueError("Can't divide two not integers values")
         
         elif(self.value == "GREATERTHAN"):
-            return self.children[0].Evaluate(symbolTable) > self.children[1].Evaluate(symbolTable)
+            if(child0[1] == "Integer" and child1[1] == "Integer"):
+                return child0[0] > child1[0]
+            else:
+                raise ValueError("Can't compare two not integer values")
         
         elif(self.value == "LESSTHAN"):
-            return self.children[0].Evaluate(symbolTable) < self.children[1].Evaluate(symbolTable)
+            if(child0[1] == "Integer" and child1[1] == "Integer"):
+                return child0[0] < child1[0]
+            else:
+                raise ValueError("Can't compare two not integer values")
 
         elif(self.value == "OR"):
-            return self.children[0].Evaluate(symbolTable) or self.children[1].Evaluate(symbolTable)
+            if(child0[1] == "Boolean" and child1[1] == "Boolean"):
+                return child0[0] or child1[0]
+            else:
+                raise ValueError("Can't compare two not Boolean values")
         
         elif(self.value == "AND"):
-            return self.children[0].Evaluate(symbolTable) and self.children[1].Evaluate(symbolTable)
+            if(child0[1] == "Boolean" and child1[1] == "Boolean"):
+                return child0[0] and child1[0]
+            else:
+                raise ValueError("Can't compare two not Boolean values")
         
         elif(self.value == "EQUAL"):
-            return self.children[0].Evaluate(symbolTable) == self.children[1].Evaluate(symbolTable)
+            if(child0[1] == child1[1]):
+                return child0[0] == child1[0]
+            else:
+                raise ValueError("Can't compare Integer with Boolean")
 
 class UnOp(Node):
+    """
+    Value: None
+    Children: 1 (1: IntVal)
+    Evaluate: -|+|not int
+    """
     def __init__(self, value, children):
         self.value = value
         self.children = children
 
     def Evaluate(self, symbolTable):
+        child = self.children[0].Evaluate(symbolTable)
         if(self.value == "MINUS"):
-            return -self.children[0].Evaluate(symbolTable)
+            if(child[1] == "Integer"):
+                return [-child[0], child[1]]
+            else:
+                raise ValueError("Invalid type for operation MINUS")
 
         elif(self.value == "PLUS"):
-            return +self.children[0].Evaluate(symbolTable)
+            if(child[1] == "Integer"):
+                return [+child[0], child[1]]
+            else:
+                raise ValueError("Invalid type for operation PLUS")
         
         elif(self.value == "NOT"):
-            return not self.children[0].Evaluate(symbolTable)
+            if(child[1] == "Boolean"):
+                return [not child[0], child[1]]
+            else:
+                raise ValueError("Invalid type for operation NOT")
 
 class IntVal(Node):
+    """
+    Value: int
+    Children: None
+    Evaluate: returns its value
+    """
     def __init__(self, value, children):
         self.value = value
         self.children = children
     
     def Evaluate(self, symbolTable):
-        return self.value
+        if(isinstance(self.value, int)):
+            return [self.value, "Integer"]
+        else:
+            raise ValueError(f"Value: {self.value} not valid")
 
 class NoOp(Node):
+    """
+    Value: None
+    Children: None
+    Evaluate: pass
+    """
     def __init__(self, value, children):
         self.value = value
         self.children = children
@@ -144,6 +269,11 @@ class NoOp(Node):
         pass
     
 class Type(Node):
+    """
+    Value: Boolean | Integer)
+    Children: None
+    Evaluate: returns its value
+    """
     def __init__(self, value, children):
         self.value = value
         self.children = children
@@ -152,6 +282,11 @@ class Type(Node):
         return self.value
 
 class BoolVal(Node):
+    """
+    Value: True | False 
+    Children: None
+    Evaluate: returns its value
+    """
     def __init__(self, value, children):
         self.value = value
         self.children = children
@@ -160,12 +295,17 @@ class BoolVal(Node):
         return self.value
 
 class VarDec(Node):
-    def __init__(self, value, children):
+     """Variable Declaration:
+        Value: None
+        Children: 2 (0: Identifier, 1: Type)
+        Evaluate: create the identifier key and its type inside SymbolTable
+    """
+    def __init__(self, value, children): 
         self.value = value
         self.children = children
     
     def Evaluate(self, symbolTable):
-        return self.value #Nao sei o que retorna!
+        symbolTable.create(self.children[0].Evaluate(symbolTable), self.children[1].Evaluate(symbolTable))
 
 class Token:
     def __init__(self, t, v,):
@@ -516,7 +656,7 @@ class Parser:
             raise ValueError("Type not supported")
     
     @staticmethod
-    def parseStatement():
+def parseStatement():
         if(Parser.tokens.actual.type == "IDENTIFIER"):
             child1 = Identifier(Parser.tokens.actual.value, [])
             Parser.tokens.selectNext()
@@ -631,18 +771,44 @@ class PrePro():
         return code
 
 class SymbolTable:
+    """
+    Store variables.
+    Dictionary:
+        key: name
+        value: [value, type]
+    """
     def __init__(self):
         self.symbolTable = {}
     
+    """
+    If name exists, returns (value, type)
+    """
     def get(self, name):
         if(name in self.symbolTable.keys()):
-            return self.symbolTable[name]
+            return (self.symbolTable[name][0], self.symbolTable[name][1])
         else:
             raise ValueError(name, " does not exists") 
     
-    def set(self, name, value):
-        self.symbolTable[name] = value
-        return 1
+    """
+    If name exists, creates name: [None, type] inside symbol Table
+    Else, raise error
+    """
+    def create(self, name, type):
+        if(name in self.symbolTable.keys()):
+            raise ValueError(f"Reassign of variable: {type}, {name}")
+        else:
+            self.symbolTable[name] = [None, type]
+            return 1
+    
+    """
+    Sets 'name' value. name: [value, type].
+    """
+    def setValue(self, name, value):
+        if(name in self.symbolTable.keys()):
+            self.symbolTable[name][0] = value
+            return 1
+        else:
+            raise ValueError(name, " does not exists")             
 
 gettrace = getattr(sys, 'gettrace', None)
 if gettrace():
