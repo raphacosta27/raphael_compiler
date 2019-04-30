@@ -3,20 +3,18 @@ Sub Main()
 Dim a as Integer
 Dim b as Integer
 Dim c as Integer
-a = 10
-b = 20
-c = input
+a = 3
+b = 5
+
+print a * (b --1)
 
 if a < b then
-    if b < c then
-        ' test comment
+    print a
+end if
 
-        while c > 0
-            ' hello
-
-            print c
-            c = c-5
-        wend
-    end if
+if a > b then
+    print b
+else
+    print a
 end if
 End Sub

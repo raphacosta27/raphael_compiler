@@ -1,7 +1,6 @@
-#O parser tem de retornar os tipos tb?
 import re
 import sys
-class Node: #abstract
+class Node:
     """
     DO NOT CREATE A NODE OBJECT, this class defines what a node is.
     """
@@ -22,7 +21,7 @@ class Identifier(Node):
         self.value = value
         self.children = children
 
-    def Evaluate(self, symbolTable): #receber SymbolTable
+    def Evaluate(self, symbolTable):
         try:
             return symbolTable.get(self.value)
         except:
@@ -47,7 +46,6 @@ class Assignment(Node):
             symbolTable.setValue(self.children[0].value, relExp[0])
         else:
             raise ValueError(f"Can't assign value {relExp[0]} to {self.children[0].value}, types do not match")
-        # symbolTable.set(self.children[0].value, children2)
         return 1
 
 class Print(Node):
@@ -60,7 +58,7 @@ class Print(Node):
         self.value = value
         self.children = children
 
-    def Evaluate(self, symbolTable): #receber SymbolTable
+    def Evaluate(self, symbolTable):
         print(self.children[0].Evaluate(symbolTable)[0])
         return 
 
@@ -75,7 +73,7 @@ class Program(Node):
         self.value = value
         self.children = children
 
-    def Evaluate(self, symbolTable): #receber SymbolTable
+    def Evaluate(self, symbolTable):
         for children in self.children:
             children.Evaluate(symbolTable)
 
@@ -91,10 +89,8 @@ class While(Node):
         self.children = children
     
     def Evaluate(self, symbolTable):
-        #!Trocar evaluate pq agr recebe listas dentro de listas
-        #e nao mais um no do tipo Statements pra so dar Evaluate
         if(self.children[0].Evaluate(symbolTable)[1] == "BOOLEAN"):
-            while self.children[0].Evaluate(symbolTable)[0]: #garantir que retorna true
+            while self.children[0].Evaluate(symbolTable)[0]:
                 for child in self.children[1]:
                     child.Evaluate(symbolTable)
         else:
@@ -789,7 +785,7 @@ class Parser:
 class PrePro():
     @staticmethod
     def filter(text):
-        code = re.sub("'.*\n", "", data)
+        code = re.sub("'.*\n", "\n", data)
         return code
 
 class SymbolTable:
@@ -834,7 +830,7 @@ class SymbolTable:
 
 gettrace = getattr(sys, 'gettrace', None)
 if gettrace():
-    #Its on debugger
+    #It's on debugger
     file_name = "teste.vbs"
 else:
     file_name = str(sys.argv[1])
