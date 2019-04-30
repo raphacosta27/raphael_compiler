@@ -139,7 +139,7 @@ class Input(Node):
         self.children = children
     def Evaluate(self, symbolTable):
         try:
-            return int(input())
+            return [int(input()), "INTEGER"]
         except:
             raise ValueError("Input can't accepts values that are not INTEGER")
 
@@ -644,7 +644,8 @@ class Parser:
                                     Parser.tokens.selectNext()
                                     break
                                 child = Parser.parseStatement()
-                                children.append(child)
+                                if(child != None):
+                                    children.append(child)
                                 if(Parser.tokens.actual.type == "EOL"):
                                     Parser.tokens.selectNext()
 
@@ -751,8 +752,9 @@ class Parser:
                     return VarDec(None, [ident_node, type_node])
 
         else:
+            Parser.tokens.selectNext()
             new_node = NoOp(None, [])
-            return
+            return new_node
 
     @staticmethod
     def parseRelExpression():
@@ -787,7 +789,7 @@ class Parser:
 class PrePro():
     @staticmethod
     def filter(text):
-        code = re.sub("'.*\n", "\n", data)
+        code = re.sub("'.*\n", "", data)
         return code
 
 class SymbolTable:
