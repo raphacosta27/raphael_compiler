@@ -121,7 +121,7 @@ class If(Node):
                     for child in self.children[2]:
                         child.Evaluate(symbolTable)
         else:
-            raise ValueError("Invalid type for while clause")
+            raise ValueError("Invalid type for If clause")
 
 
 class Input(Node):
