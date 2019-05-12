@@ -1,5 +1,17 @@
 import re
 import sys
+class writeAssembly():
+    def __init__(self):
+        self.code = []
+        
+    def write(self, command):
+        self.code.append(command)
+
+    def finish(self):
+        with open("a.out", "w+") as file:
+            for i in self.code:
+                file.write(i+"\n")
+
 class Node:
     """
     DO NOT CREATE A NODE OBJECT, this class defines what a node is.
@@ -7,9 +19,15 @@ class Node:
     def __init__(self):
         self.value = None
         self.children = None
+        self.i = -1
     
     def Evaluate(self, symbolTable):
         pass
+    
+    def newId(self):
+        self.i += 1
+        return self.i
+
 
 class Identifier(Node):
     """
