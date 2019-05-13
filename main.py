@@ -144,7 +144,7 @@ class While(Node):
         for child in self.children[1]:
             child.Evaluate(symbolTable)
         writeAssembly.write(f"JMP LOOP_{self.id}")
-        writeAssembly.write(f"EXIT{self.id}:")
+        writeAssembly.write(f"EXIT_{self.id}:")
 
 class If(Node):
     """
