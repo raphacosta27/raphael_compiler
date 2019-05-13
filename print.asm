@@ -11,7 +11,7 @@ segment .data
 segment .bss ; variaveis
 res RESB 1
 section .text
-global_start
+global _start
 
 print:  ; subrotina print
 

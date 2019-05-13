@@ -8,12 +8,10 @@ True equ 1
 False equ 0
 
 segment .data
-
 segment .bss ; variaveis
 res RESB 1
-
 section .text
-global_start
+global _start
 
 print:  ; subrotina print
 
@@ -75,54 +73,57 @@ binop_true:
 binop_exit:
   RET
 
-_start:
-PUSH EBP ; guarda o b a se p oi n t e r
-MOV EBP, ESP ; e s t a b e l e c e um novo b a se p oi n t e r
-; c o di g o ge r ad o p el o c ompil ad o r
-PUSH DWORD 0 ; Dim i a s I n t e g e r [EBP−4]
-PUSH DWORD 0 ; Dim n a s I n t e g e r [EBP−8]
-PUSH DWORD 0 ; Dim f a s I n t e g e r [EBP−12]
+_start :
+PUSH EBP ; guarda o base pointer
+MOV EBP, ESP ; estabelece um novo base pointer
+
+; codigo gerado pelo compilador
+
+PUSH DWORD 0 ; Dim i as INTEGER [EBP−4]
+PUSH DWORD 0 ; Dim n as INTEGER [EBP−8]
+PUSH DWORD 0 ; Dim f as INTEGER [EBP−12]
 MOV EBX, 5
 MOV [EBP-8], EBX ; n = 5
 MOV EBX, 2
 MOV [EBP-4], EBX ; i = 2
 MOV EBX, 1
 MOV [EBP-12], EBX ; f = 1
-LOOP_34:
+LOOP_33:
 MOV EBX, [EBP-4]
-PUSH EBX ; empilha i
+PUSH EBX
 MOV EBX, [EBP-8]
-PUSH EBX ; empilha n
+PUSH EBX
 MOV EBX, 1
 POP EAX
-ADD EAX, EBX ; n + 1
+ADD EAX, EBX
 MOV EBX, EAX
 POP EAX
 CMP EAX, EBX
-CALL binop_jl ; i < n + 1
+CALL binop_jl
 CMP EBX, False
-JE EXIT_34
+JE EXIT_33
 MOV EBX, [EBP-12]
-PUSH EBX ; empilha f
+PUSH EBX
 MOV EBX, [EBP-4]
-POP EAX ; empilha i
-IMUL EBX ; i ∗ f
+POP EAX
+IMUL EBX
 MOV EBX, EAX
 MOV [EBP-12], EBX ; f = 2
 MOV EBX, [EBP-4]
-PUSH EBX ; empilha i
+PUSH EBX
 MOV EBX, 1
 POP EAX
-ADD EAX, EBX ; i + 1
+ADD EAX, EBX
 MOV EBX, EAX
 MOV [EBP-4], EBX ; i = 3
-JMP LOOP_34
-EXIT_34:
+JMP LOOP_33
+EXIT_33:
 MOV EBX, [EBP-12]
-PUSH EBX ; empilha f
-CALL print ; P ri n t f
-POP EBX ; limpa a r g s
-; i n t e r r u p c a o de s ai d a
+PUSH EBX
+CALL print
+POP EBX
+
+; interrupcao de saida
 POP EBP
 MOV EAX, 1
 INT 0x80

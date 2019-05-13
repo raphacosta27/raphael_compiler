@@ -11,7 +11,7 @@ segment .data
 segment .bss ; variaveis
 res RESB 1
 section .text
-global_start:
+global _start
 
 print:  ; subrotina print
 
@@ -82,46 +82,32 @@ MOV EBP, ESP ; estabelece um novo base pointer
 PUSH DWORD 0 ; Dim i as INTEGER [EBP−4]
 PUSH DWORD 0 ; Dim n as INTEGER [EBP−8]
 PUSH DWORD 0 ; Dim f as INTEGER [EBP−12]
+PUSH DWORD 0 ; Dim a as BOOLEAN [EBP−16]
 MOV EBX, 5
 MOV [EBP-8], EBX ; n = 5
 MOV EBX, 2
 MOV [EBP-4], EBX ; i = 2
 MOV EBX, 1
 MOV [EBP-12], EBX ; f = 1
-LOOP_33:
-MOV EBX, [EBP-4]
-PUSH EBX
+MOV EBX, True
+MOV [EBP-16], EBX ; a = True
+IF_30:
 MOV EBX, [EBP-8]
 PUSH EBX
-MOV EBX, 1
-POP EAX
-ADD EAX, EBX
-MOV EBX, EAX
+MOV EBX, 3
 POP EAX
 CMP EAX, EBX
-CALL binop_jl
+CALL binop_jg
 CMP EBX, False
-JE EXIT_33
-MOV EBX, [EBP-12]
-PUSH EBX
+JE EXIT_30
 MOV EBX, [EBP-4]
-POP EAX
-IMUL EBX
+MOV EAX, EBX
+NEG EAX
 MOV EBX, EAX
-MOV [EBP-12], EBX ; f = 2
-MOV EBX, [EBP-4]
-PUSH EBX
-MOV EBX, 1
-POP EAX
-ADD EAX, EBX
-MOV EBX, EAX
-MOV [EBP-4], EBX ; i = 3
-JMP LOOP_33
-EXIT_33:
-MOV EBX, [EBP-12]
 PUSH EBX
 CALL print
 POP EBX
+EXIT_30:
 
 ; interrupcao de saida
 POP EBP
