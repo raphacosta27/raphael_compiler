@@ -49,7 +49,7 @@ class Identifier(Node):
     def Evaluate(self, symbolTable):
         try:
             stValue = symbolTable.get(self.value)
-            writeAssembly.write(f"MOVE EBX, [EBP - {stValue[2]}]")
+            writeAssembly.write(f"MOV EBX, [EBP - {stValue[2]}]")
             return stValue
             
 
@@ -94,6 +94,9 @@ class Print(Node):
 
     def Evaluate(self, symbolTable):
         print(self.children[0].Evaluate(symbolTable)[0])
+        writeAssembly.write("PUSH EBX")
+        writeAssembly.write("CALL print")
+        writeAssembly.write("POP EBX")
         return 
 
 class Program(Node):
@@ -125,48 +128,18 @@ class While(Node):
         self.children = children
     
     def Evaluate(self, symbolTable):
-        # While i < n + 1
-        # f = f * i
-        # i = i + 1
-        # Wend
-
-        # LOOP_34:
-        # MOV EBX, [EBP−4]
-        # PUSH EBX ; empilha i
-        # MOV EBX, [EBP−8]
-        # PUSH EBX ; empilha n
-        # MOV EBX, 1
-        # POP EAX
-        # ADD EAX, EBX ; n + 1
-        # MOV EBX, EAX
-        # POP EAX
-        # CMP EAX, EBX
-        # CALL bi n o p_ jl ; i < n + 1
-        # CMP EBX, F al s e
-        # JE EXIT_34
-        # MOV EBX, [EBP−12]
-        # PUSH EBX ; empilha f
-        # MOV EBX, [EBP−4]
-        # POP EAX ; empilha i
-        # IMUL EBX ; i ∗ f
-        # MOV EBX, EAX
-        # MOV [EBP−12] , EBX ; f = f ∗ i
-        # MOV EBX, [EBP−4]
-        # PUSH EBX ; empilha i
-        # MOV EBX, 1
-        # POP EAX
-        # ADD EAX, EBX ; i + 1
-        # MOV EBX, EAX
-        # MOV [EBP−4] , EBX ; i = i + 1
-        # JMP LOOP_34
-        # EXIT_34 :
         writeAssembly.write(f"LOOP_{self.id}:")
-        if(self.children[0].Evaluate(symbolTable)[1] == "BOOLEAN"):
-            while self.children[0].Evaluate(symbolTable)[0]:
-                for child in self.children[1]:
-                    child.Evaluate(symbolTable)
-        else:
-            raise ValueError("Invalid type for while clause")
+        # if(self.children[0].Evaluate(symbolTable)[1] == "BOOLEAN"):
+            # while self.children[0].Evaluate(symbolTable)[0]:
+        self.children[0].Evaluate(symbolTable)
+        writeAssembly.write(f"CMP EBX, False")
+        writeAssembly.write(f"JE EXIT_{self.id}")
+        for child in self.children[1]:
+            child.Evaluate(symbolTable)
+        writeAssembly.write(f"JMP LOOP_{self.id}")
+        writeAssembly.write(f"EXIT{self.id}:")
+        # else:
+        #     raise ValueError("Invalid type for while clause")
 
 class If(Node):
     """
@@ -228,57 +201,79 @@ class BinOp(Node):
 
     def Evaluate(self, symbolTable):
         child0 = self.children[0].Evaluate(symbolTable)
+        writeAssembly.write("PUSH EBX")
         child1 = self.children[1].Evaluate(symbolTable)
+        writeAssembly.write("POP EAX")
+
+        
         if(self.value == "PLUS"):
             if(child0[1] == "INTEGER" and child1[1] == "INTEGER"):
+                writeAssembly.write("ADD EAX, EBX")
+                writeAssembly.write("MOV EBX, EAX")
                 return (child0[0] + child1[0], "INTEGER")
             else:
                 raise ValueError("Can't sum two not INTEGERs values")
             
         elif(self.value == "MINUS"):
             if(child0[1] == "INTEGER" and child1[1] == "INTEGER"):
+                writeAssembly.write("SUB EAX, EBX")
+                writeAssembly.write("MOV EBX, EAX")
                 return (child0[0] - child1[0], "INTEGER")
             else:
                 raise ValueError("Can't subtract two not INTEGERs values")
         
         elif(self.value == "MULT"):
             if(child0[1] == "INTEGER" and child1[1] == "INTEGER"):
+                writeAssembly.write("IMUL EBX")
+                writeAssembly.write("MOV EBX, EAX")
                 return (child0[0] * child1[0], "INTEGER")
             else:
                 raise ValueError("Can't multiply two not INTEGERs values")
         
         elif(self.value == "DIV"):
             if(child0[1] == "INTEGER" and child1[1] == "INTEGER"):
+                writeAssembly.write("IDIV EBX")
+                writeAssembly.write("MOV EBX, EAX")
                 return (child0[0] // child1[0], "INTEGER")
             else:
                 raise ValueError("Can't divide two not INTEGERs values")
         
         elif(self.value == "GREATERTHAN"):
             if(child0[1] == "INTEGER" and child1[1] == "INTEGER"):
+                writeAssembly.write("CMP EAX, EBX")
+                writeAssembly.write("CALL binop_jl")
                 return (child0[0] > child1[0], "BOOLEAN")
             else:
                 raise ValueError("Can't compare two not INTEGER values")
         
         elif(self.value == "LESSTHAN"):
             if(child0[1] == "INTEGER" and child1[1] == "INTEGER"):
+                writeAssembly.write("CMP EAX, EBX")
+                writeAssembly.write("CALL binop_jg")
                 return (child0[0] < child1[0], "BOOLEAN")
             else:
                 raise ValueError("Can't compare two not INTEGER values")
 
         elif(self.value == "OR"):
             if(child0[1] == "BOOLEAN" and child1[1] == "BOOLEAN"):
+                writeAssembly.write("OR EAX, EBX")
+                writeAssembly.write("MOV EBX, EAX")
                 return (child0[0] or child1[0], "BOOLEAN")
             else:
                 raise ValueError("Can't compare two not BOOLEAN values")
         
         elif(self.value == "AND"):
             if(child0[1] == "BOOLEAN" and child1[1] == "BOOLEAN"):
+                writeAssembly.write("AND EAX, EBX")
+                writeAssembly.write("MOV EBX, EAX")
                 return (child0[0] and child1[0], "BOOLEAN")
             else:
                 raise ValueError("Can't compare two not BOOLEAN values")
         
         elif(self.value == "EQUAL"):
             if(child0[1] == child1[1]):
+                writeAssembly.write("CMP EAX, EBX")
+                writeAssembly.write("CALL binop_je")
                 return (child0[0] == child1[0], "BOOLEAN")
             else:
                 raise ValueError("Can't compare INTEGER with BOOLEAN")
@@ -296,6 +291,8 @@ class UnOp(Node):
 
     def Evaluate(self, symbolTable): #como assumo que o filho ta no ebx, so faco mov do proprio ebx mesmo
         child = self.children[0].Evaluate(symbolTable)
+        writeAssembly.write("PUSH EBX")
+        
         if(self.value == "MINUS"):
             if(child[1] == "INTEGER"):
                 writeAssembly.write("NEG EBX") #?????????????
@@ -311,6 +308,10 @@ class UnOp(Node):
         
         elif(self.value == "NOT"):
             if(child[1] == "BOOLEAN"):
+                if(child[0] == True):
+                    writeAssembly.write("MOV EBX, False")
+                else:
+                    writeAssembly.write("MOV EBX, True")
                 # writeAssembly.write("NEG EBX") ?????????????
                 return [not child[0], child[1]]
             else:
