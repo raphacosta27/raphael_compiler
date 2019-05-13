@@ -1,13 +1,11 @@
-Sub Main()
-Dim i as Integer
-Dim n as Integer
-Dim f as Integer
-n = 5
-i = 2
-f = 1
-While i < n + 1
-f = f * i
-i = i + 1
-Wend
-Print f
+Sub main()
+    Dim tb as boolean
+    Dim ti as integer
+
+    tb = TRUE
+    ti = 10
+
+    if tb then
+        print ti + 10
+    end if
 End Sub
