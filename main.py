@@ -245,7 +245,7 @@ class BinOp(Node):
         elif(self.value == "GREATERTHAN"):
             if(child0[1] == "INTEGER" and child1[1] == "INTEGER"):
                 writeAssembly.write("CMP EAX, EBX")
-                writeAssembly.write("CALL binop_jl")
+                writeAssembly.write("CALL binop_jg")
                 return (child0[0] > child1[0], "BOOLEAN")
             else:
                 raise ValueError("Can't compare two not INTEGER values")
@@ -253,7 +253,7 @@ class BinOp(Node):
         elif(self.value == "LESSTHAN"):
             if(child0[1] == "INTEGER" and child1[1] == "INTEGER"):
                 writeAssembly.write("CMP EAX, EBX")
-                writeAssembly.write("CALL binop_jg")
+                writeAssembly.write("CALL binop_jl")
                 return (child0[0] < child1[0], "BOOLEAN")
             else:
                 raise ValueError("Can't compare two not INTEGER values")
