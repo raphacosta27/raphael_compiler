@@ -58,7 +58,7 @@ class Identifier(Node):
     def Evaluate(self, symbolTable):
         try:
             stValue = symbolTable.get(self.value)
-            writeAssembly.write(f"MOV EBX, [EBP - {stValue[2]}]")
+            writeAssembly.write(f"MOV EBX, [EBP-{stValue[2]}]")
             return stValue
             
 
@@ -81,10 +81,10 @@ class Assignment(Node):
         getValue = symbolTable.get(self.children[0].value)
         currentType = getValue[1] #Cobre o erro de nao existir 
         if(currentType == "BOOLEAN" and relExp[1] == "BOOLEAN"): #Cobre erro de unmatch de tipos
-            writeAssembly.write(f"MOV [EBP - {getValue[2]}], EBX ; {self.children[0].value} = {relExp[0]}")
+            writeAssembly.write(f"MOV [EBP-{getValue[2]}], EBX ; {self.children[0].value} = {relExp[0]}")
             symbolTable.setValue(self.children[0].value, relExp[0])
         elif(currentType == "INTEGER" and relExp[1] == "INTEGER"):
-            writeAssembly.write(f"MOV [EBP - {getValue[2]}], EBX ; {self.children[0].value} = {relExp[0]}")
+            writeAssembly.write(f"MOV [EBP-{getValue[2]}], EBX ; {self.children[0].value} = {relExp[0]}")
             symbolTable.setValue(self.children[0].value, relExp[0])
         else:
             raise ValueError(f"Can't assign value {relExp[0]} to {self.children[0].value}, types do not match")
