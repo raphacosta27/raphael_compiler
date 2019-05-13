@@ -13,8 +13,17 @@ class writeAssembly:
         if os.path.exists("a.asm"):
             os.remove("a.asm")
         with open("a.asm", "w+", encoding="utf-8") as file:
+            with open("print.asm", "r", encoding="utf-8") as const:
+                for line in const.readlines():
+                    file.write(line)
+
             for i in writeAssembly.code:
                 file.write(i + "\n")
+
+            file.write("\n; interrupcao de saida\n")
+            file.write("POP EBP\n")
+            file.write("MOV EAX, 1\n")
+            file.write("INT 0x80\n")
 
 class Node:
     """
@@ -129,8 +138,6 @@ class While(Node):
     
     def Evaluate(self, symbolTable):
         writeAssembly.write(f"LOOP_{self.id}:")
-        # if(self.children[0].Evaluate(symbolTable)[1] == "BOOLEAN"):
-            # while self.children[0].Evaluate(symbolTable)[0]:
         self.children[0].Evaluate(symbolTable)
         writeAssembly.write(f"CMP EBX, False")
         writeAssembly.write(f"JE EXIT_{self.id}")
@@ -138,8 +145,6 @@ class While(Node):
             child.Evaluate(symbolTable)
         writeAssembly.write(f"JMP LOOP_{self.id}")
         writeAssembly.write(f"EXIT{self.id}:")
-        # else:
-        #     raise ValueError("Invalid type for while clause")
 
 class If(Node):
     """
@@ -157,17 +162,16 @@ class If(Node):
         self.children = children
     
     def Evaluate(self, symbolTable):
-        child0 = self.children[0].Evaluate(symbolTable)
-        if(child0[1] == "BOOLEAN"):
-            if(self.children[0].Evaluate(symbolTable)[0]):
-                for child in self.children[1]:
-                    child.Evaluate(symbolTable)
-            else:
-                if(len(self.children) == 3):
-                    for child in self.children[2]:
-                        child.Evaluate(symbolTable)
-        else:
-            raise ValueError("Invalid type for If clause")
+        writeAssembly.write(f"IF_{self.id}:")
+        self.children[0].Evaluate(symbolTable)
+        writeAssembly.write("CMP EBX, False")
+        writeAssembly.write(f"JE EXIT_{self.id}")
+        for child in self.children[1]:
+            child.Evaluate(symbolTable)
+        writeAssembly.write(f"EXIT_{self.id}:")
+        if(len(self.children) == 3):
+            for child in self.children[2]:
+                child.Evaluate(symbolTable)
 
 
 class Input(Node):
@@ -291,8 +295,7 @@ class UnOp(Node):
 
     def Evaluate(self, symbolTable): #como assumo que o filho ta no ebx, so faco mov do proprio ebx mesmo
         child = self.children[0].Evaluate(symbolTable)
-        writeAssembly.write("PUSH EBX")
-        
+
         if(self.value == "MINUS"):
             if(child[1] == "INTEGER"):
                 writeAssembly.write("NEG EBX") #?????????????
@@ -301,7 +304,7 @@ class UnOp(Node):
                 raise ValueError("Invalid type for operation MINUS")
 
         elif(self.value == "PLUS"):
-            if(child[1] == "INTEGER"):
+            if(child[1] == "INTEGER"): #nao faz nada pois + + + = +, + + - = -
                 return [+child[0], child[1]]
             else:
                 raise ValueError("Invalid type for operation PLUS")
@@ -312,7 +315,6 @@ class UnOp(Node):
                     writeAssembly.write("MOV EBX, False")
                 else:
                     writeAssembly.write("MOV EBX, True")
-                # writeAssembly.write("NEG EBX") ?????????????
                 return [not child[0], child[1]]
             else:
                 raise ValueError("Invalid type for operation NOT")
