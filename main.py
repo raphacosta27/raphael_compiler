@@ -1,32 +1,38 @@
 import re
 import sys
-class writeAssembly():
-    def __init__(self):
-        self.code = []
-        
-    def write(self, command):
-        self.code.append(command)
+import os
 
-    def finish(self):
-        with open("a.out", "w+") as file:
-            for i in self.code:
-                file.write(i+"\n")
+class writeAssembly:
+    code = []
+    @staticmethod    
+    def write(command):
+        writeAssembly.code.append(command)
+
+    @staticmethod
+    def finish():
+        if os.path.exists("a.asm"):
+            os.remove("a.asm")
+        with open("a.asm", "w+", encoding="utf-8") as file:
+            for i in writeAssembly.code:
+                file.write(i + "\n")
 
 class Node:
     """
     DO NOT CREATE A NODE OBJECT, this class defines what a node is.
     """
+    i = -1
     def __init__(self):
         self.value = None
         self.children = None
-        self.i = -1
+        self.id = Node.newId()
     
     def Evaluate(self, symbolTable):
         pass
     
-    def newId(self):
-        self.i += 1
-        return self.i
+    @staticmethod
+    def newId():
+        Node.i += 1
+        return Node.i
 
 
 class Identifier(Node):
@@ -36,12 +42,17 @@ class Identifier(Node):
     Evaluate: Returns its value
     """
     def __init__(self, value, children):
+        super().__init__()
         self.value = value
         self.children = children
 
     def Evaluate(self, symbolTable):
         try:
-            return symbolTable.get(self.value)
+            stValue = symbolTable.get(self.value)
+            writeAssembly.write(f"MOVE EBX, [EBP - {stValue[2]}]")
+            return stValue
+            
+
         except:
             raise ValueError("Identifier: ", self.value, " does not exists")
 
@@ -52,15 +63,19 @@ class Assignment(Node):
     Evaluate: sets 'identifier' value in symbolTable with value 'RelExpression'
     """
     def __init__(self, value, children):
+        super().__init__()
         self.value = value
         self.children = children
 
     def Evaluate(self, symbolTable): #receber SymbolTable
         relExp = self.children[1].Evaluate(symbolTable)
-        currentType = symbolTable.get(self.children[0].value)[1] #Cobre o erro de nao existir 
+        getValue = symbolTable.get(self.children[0].value)
+        currentType = getValue[1] #Cobre o erro de nao existir 
         if(currentType == "BOOLEAN" and relExp[1] == "BOOLEAN"): #Cobre erro de unmatch de tipos
+            writeAssembly.write(f"MOV [EBP - {getValue[2]}], EBX ; {self.children[0].value} = {relExp[0]}")
             symbolTable.setValue(self.children[0].value, relExp[0])
         elif(currentType == "INTEGER" and relExp[1] == "INTEGER"):
+            writeAssembly.write(f"MOV [EBP - {getValue[2]}], EBX ; {self.children[0].value} = {relExp[0]}")
             symbolTable.setValue(self.children[0].value, relExp[0])
         else:
             raise ValueError(f"Can't assign value {relExp[0]} to {self.children[0].value}, types do not match")
@@ -73,6 +88,7 @@ class Print(Node):
     Evaluate: print on terminal children[0].Evaluate()
     """
     def __init__(self, value, children):
+        super().__init__()
         self.value = value
         self.children = children
 
@@ -88,6 +104,7 @@ class Program(Node):
                 child.Evaluate()
     """
     def __init__(self, value, children):
+        super().__init__()
         self.value = value
         self.children = children
 
@@ -103,10 +120,47 @@ class While(Node):
                 children[1].Evaluate()
     """
     def __init__(self, value, children):
+        super().__init__()
         self.value = value
         self.children = children
     
     def Evaluate(self, symbolTable):
+        # While i < n + 1
+        # f = f * i
+        # i = i + 1
+        # Wend
+
+        # LOOP_34:
+        # MOV EBX, [EBP−4]
+        # PUSH EBX ; empilha i
+        # MOV EBX, [EBP−8]
+        # PUSH EBX ; empilha n
+        # MOV EBX, 1
+        # POP EAX
+        # ADD EAX, EBX ; n + 1
+        # MOV EBX, EAX
+        # POP EAX
+        # CMP EAX, EBX
+        # CALL bi n o p_ jl ; i < n + 1
+        # CMP EBX, F al s e
+        # JE EXIT_34
+        # MOV EBX, [EBP−12]
+        # PUSH EBX ; empilha f
+        # MOV EBX, [EBP−4]
+        # POP EAX ; empilha i
+        # IMUL EBX ; i ∗ f
+        # MOV EBX, EAX
+        # MOV [EBP−12] , EBX ; f = f ∗ i
+        # MOV EBX, [EBP−4]
+        # PUSH EBX ; empilha i
+        # MOV EBX, 1
+        # POP EAX
+        # ADD EAX, EBX ; i + 1
+        # MOV EBX, EAX
+        # MOV [EBP−4] , EBX ; i = i + 1
+        # JMP LOOP_34
+        # EXIT_34 :
+        writeAssembly.write(f"LOOP_{self.id}:")
         if(self.children[0].Evaluate(symbolTable)[1] == "BOOLEAN"):
             while self.children[0].Evaluate(symbolTable)[0]:
                 for child in self.children[1]:
@@ -125,6 +179,7 @@ class If(Node):
                 children[2].Evaluate()
     """
     def __init__(self, value, children):
+        super().__init__()
         self.value = value
         self.children = children
     
@@ -149,11 +204,14 @@ class Input(Node):
     Evaluate: Get terminal input
     """
     def __init__(self, value, children):
+        super().__init__()
         self.value = value
         self.children = children
     def Evaluate(self, symbolTable):
         try:
-            return [int(input()), "INTEGER"]
+            value = int(input())
+            writeAssembly.write(f"MOV EBX, {value}")
+            return [value, "INTEGER"]
         except:
             raise ValueError("Input can't accepts values that are not INTEGER")
 
@@ -164,6 +222,7 @@ class BinOp(Node):
     Evaluate: returns children[0].Evaluate Operation children[1].Evaluate
     """
     def __init__(self, value, children):
+        super().__init__()
         self.value = value
         self.children = children
 
@@ -231,13 +290,15 @@ class UnOp(Node):
     Evaluate: -|+|not int
     """
     def __init__(self, value, children):
+        super().__init__()
         self.value = value
         self.children = children
 
-    def Evaluate(self, symbolTable):
+    def Evaluate(self, symbolTable): #como assumo que o filho ta no ebx, so faco mov do proprio ebx mesmo
         child = self.children[0].Evaluate(symbolTable)
         if(self.value == "MINUS"):
             if(child[1] == "INTEGER"):
+                writeAssembly.write("NEG EBX") #?????????????
                 return [-child[0], child[1]]
             else:
                 raise ValueError("Invalid type for operation MINUS")
@@ -250,6 +311,7 @@ class UnOp(Node):
         
         elif(self.value == "NOT"):
             if(child[1] == "BOOLEAN"):
+                # writeAssembly.write("NEG EBX") ?????????????
                 return [not child[0], child[1]]
             else:
                 raise ValueError("Invalid type for operation NOT")
@@ -261,11 +323,13 @@ class IntVal(Node):
     Evaluate: returns its value
     """
     def __init__(self, value, children):
+        super().__init__()
         self.value = value
         self.children = children
     
     def Evaluate(self, symbolTable):
         if(isinstance(self.value, int)):
+            writeAssembly.write(f"MOV EBX, {self.value}")
             return [self.value, "INTEGER"]
         else:
             raise ValueError(f"Value: {self.value} not valid")
@@ -277,6 +341,7 @@ class NoOp(Node):
     Evaluate: pass
     """
     def __init__(self, value, children):
+        super().__init__()
         self.value = value
         self.children = children
     
@@ -290,6 +355,7 @@ class Type(Node):
     Evaluate: returns its value
     """
     def __init__(self, value, children):
+        super().__init__()
         self.value = value
         self.children = children
     
@@ -303,10 +369,12 @@ class BoolVal(Node):
     Evaluate: returns its value
     """
     def __init__(self, value, children):
+        super().__init__()
         self.value = value
         self.children = children
     
     def Evaluate(self, symbolTable):
+        writeAssembly.write(f"MOV EBX, {self.value}")
         return (self.value, "BOOLEAN")
 
 class VarDec(Node):
@@ -317,11 +385,15 @@ class VarDec(Node):
         Evaluate: create the identifier key and its type inside SymbolTable
     """
     def __init__(self, value, children): 
+        super().__init__()
         self.value = value
         self.children = children
     
     def Evaluate(self, symbolTable):
-        symbolTable.create(self.children[0].value, self.children[1].Evaluate(symbolTable))
+        name = self.children[0].value
+        type = self.children[1].Evaluate(symbolTable)
+        desloc = symbolTable.create(name, type)
+        writeAssembly.write(f"PUSH DWORD 0 ; Dim {name} as {type} [EBP−{desloc}]")
 
 class Token:
     def __init__(self, t, v,):
@@ -815,13 +887,14 @@ class SymbolTable:
     """
     def __init__(self):
         self.symbolTable = {}
+        self.deslocamento = 0
     
     """
     If name exists, returns (value, type)
     """
     def get(self, name):
         if(name in self.symbolTable.keys()):
-            return (self.symbolTable[name][0], self.symbolTable[name][1])
+            return (self.symbolTable[name][0], self.symbolTable[name][1], self.symbolTable[name][2])
         else:
             raise ValueError(name, " does not exists") 
     
@@ -833,8 +906,9 @@ class SymbolTable:
         if(name in self.symbolTable.keys()):
             raise ValueError(f"Reassign of variable: {type}, {name}")
         else:
-            self.symbolTable[name] = [None, type]
-            return 1
+            self.deslocamento += 4
+            self.symbolTable[name] = [None, type, self.deslocamento]
+            return self.deslocamento
     
     """
     Sets 'name' value. name: [value, type].
@@ -859,3 +933,4 @@ with open(file_name) as file:
 symbolTable = SymbolTable()
 res = Parser.run(data)
 res.Evaluate(symbolTable)
+writeAssembly.finish()

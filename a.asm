@@ -1,0 +1,11 @@
+PUSH DWORD 0 ; Dim i as INTEGER [EBP−4]
+PUSH DWORD 0 ; Dim n as INTEGER [EBP−8]
+PUSH DWORD 0 ; Dim f as INTEGER [EBP−12]
+MOV EBX, 5
+MOV [EBP - 8], EBX ; n = 5
+MOV EBX, 2
+MOV [EBP - 4], EBX ; i = 2
+MOV EBX, 1
+MOV [EBP - 12], EBX ; f = 1
+MOVE EBX, [EBP - 12]
+MOV EBX, 

@@ -1,3 +1,18 @@
+; constantes
+SYS_EXIT equ 1
+SYS_READ equ 3
+SYS_WRITE equ 4
+STDIN equ 0
+STDOUT equ 1
+True equ 1
+False equ 0
+
+segment .data
+segment .bss ; variaveis
+res RESB 1
+section .text
+global_start
+
 print:  ; subrotina print
 
   PUSH EBP ; guarda o base pointer
@@ -57,3 +72,10 @@ binop_true:
   MOV EBX, True
 binop_exit:
   RET
+
+_start :
+PUSH EBP ; guarda o base pointer
+2
+MOV EBP, ESP ; estabelece um novo base pointer
+
+; codigo gerado pelo compilador
