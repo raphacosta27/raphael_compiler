@@ -62,12 +62,11 @@ class Print(Node):
         print(self.children[0].Evaluate(symbolTable)[0])
         return 
 
-class Program(Node):
+class Statements(Node):
     """ 
     Value: None
-    Children: All nodes from AST
-    Evaluate: for each child in children:
-                child.Evaluate()
+    Children: All SubDecs and FuncDecs of program
+    Evaluate: Evaluate of each children and call a FunCall for Main Function
     """
     def __init__(self, value, children):
         self.value = value
@@ -76,6 +75,7 @@ class Program(Node):
     def Evaluate(self, symbolTable):
         for children in self.children:
             children.Evaluate(symbolTable)
+
 
 class While(Node):
     """
@@ -304,6 +304,85 @@ class VarDec(Node):
     
     def Evaluate(self, symbolTable):
         symbolTable.create(self.children[0].value, self.children[1].Evaluate(symbolTable))
+    
+class SubDec(Node):
+    """
+        Sub Declaration
+        Value: Sub name
+        Children: n (0: Type, n-1: Statements)
+        Evaluate: Declare itself in Symbol Table, with your type and a pointer for itself.
+    """
+    def __init__(self, value, children):
+        self.value = value
+        self.children = children
+    
+    def Evaluate(self, symbolTable):
+        symbolTable.create(self.value, "SUB")#nome, tipo, valor
+        symbolTable.setValue(self.value, self)
+
+class FuncDec(Node):
+    """
+        Func Declaration
+        Value: Function name
+        Children: n (0: Type, n-1: Statements)
+        Evaluate: Declare itself in Symbol Table, with your type and a pointer for itself.
+    """
+    def __init__(self, value, children):
+        self.value = value
+        self.children = children
+    
+    def Evaluate(self, symbolTable):
+        symbolTable.create(self.value, "FUNC")#nome, tipo, valor
+        symbolTable.setValue(self.value, self)
+
+class SubFuncCall(Node):
+    """
+        Sub Call
+        Value: Sub Name
+        Children: n, where n is the number of arguments that SubDec specifies.
+        Evaluate: run SubDec.
+            1) Recupera o nó na symbolTable
+            2) Cria uma nova ST
+                - Coloca o nome na ST com o tipo do 1o filho
+            3) Evaluate do 2o filho ate o n-1 (VarDecs), populando a ST
+                - Popular a ST com os argumentos de entrada
+            4) Evaluate do n-esimo filho (stmts)
+            5) Se Func, retorna a variavel com o nome "value" ST 
+    """
+    def __init__(self, value, children):
+        self.value = value
+        self.children = children
+    
+    def Evaluate(self, symbolTable):
+        pointer, type = symbolTable.get(self.value) #0: Value, 1: Type
+        if(type == "SUB"):
+            st = SymbolTable()
+            st.create(self.value, pointer.children[0])
+            for child in pointer.children[0:-1]: #Evaluate dos VarDecs
+                child.Evaluate(st) 
+                try:
+                    st.setValue(child.children[0].value, self.children[n])
+                    n += 1
+                except:
+                    raise ValueError(f"""Sub {self.value} expected {len(pointer.children[1:-2])} arguments
+                                       but {len(self.children)} were given""")
+            pointer.children[-1].Evaluate(st)
+
+        elif(type == "FUNC"):
+            st = SymbolTable()
+            st.create(self.value, pointer.children[0])
+            n = 0 #variavel de deslocamento dos childrens do subcall em relacao ao children[1:-2]
+            for child in pointer.children[1:-1]: #Evaluate dos VarDecs
+                child.Evaluate(st) 
+                try:
+                    st.setValue(child.children[0].value, self.children[n])
+                    n += 1
+                except:
+                    raise ValueError(f"""Sub {self.value} expected {len(pointer.children[1:-2])} arguments
+                                       but {len(self.children)} were given""")
+            pointer.children[-1].Evaluate(st)
+            return st.get(self.value)[0]  
+           
 
 class Token:
     def __init__(self, t, v,):
@@ -382,6 +461,12 @@ class Tokenizer:
             
             elif(aux == "<"):
                 new_token = Token("LESSTHAN", "<")
+                self.position += 1
+                self.actual = new_token 
+                return new_token
+            
+            elif(aux == ","):
+                new_token = Token("COMMA", ",")
                 self.position += 1
                 self.actual = new_token 
                 return new_token
@@ -465,10 +550,10 @@ class Tokenizer:
                     self.actual = new_token
                     return new_token
 
-                elif(current_token.upper() == "MAIN"):
-                    new_token = Token("MAIN", "MAIN")
-                    self.actual = new_token
-                    return new_token
+                # elif(current_token.upper() == "MAIN"):
+                #     new_token = Token("MAIN", "MAIN")
+                #     self.actual = new_token
+                #     return new_token
 
                 elif(current_token.upper() == "INTEGER"):
                     new_token = Token("TYPE", "INTEGER")
@@ -497,6 +582,16 @@ class Tokenizer:
                 
                 elif(current_token.upper() == "FALSE"):
                     new_token = Token("BOOL", "FALSE")
+                    self.actual = new_token
+                    return new_token
+                
+                elif(current_token.upper() == "FUNCTION"):
+                    new_token = Token("FUNCTION", "FUNCTION")
+                    self.actual = new_token
+                    return new_token
+                
+                elif(current_token.upper() == "CALL"):
+                    new_token = Token("CALL", "CALL")
                     self.actual = new_token
                     return new_token
 
@@ -604,8 +699,22 @@ class Parser:
                 return new_node
 
         elif(Parser.tokens.actual.type == "IDENTIFIER"):
-            new_node = Identifier(Parser.tokens.actual.value, [])
+            name = Parser.tokens.actual.value
             Parser.tokens.selectNext()
+            if(Parser.tokens.actual.type == "("):
+                Parser.tokens.selectNext()
+                children = []
+                while True:
+                    if(Parser.tokens.actual.type == ")"):
+                        Parser.tokens.selectNext()
+                        break
+                    else:
+                        children.append(Parser.parseRelExpression())
+                        if(Parser.tokens.actual.type == "COMMA"):
+                            Parser.tokens.selectNext()
+                new_node = SubFuncCall(name, children)
+            else:
+                new_node = Identifier(name, [])
             return new_node
         
         #implementar
@@ -623,33 +732,17 @@ class Parser:
             raise ValueError("Invalid Token: ", Parser.tokens.actual.type)
     
     @staticmethod
-    def parseProgram():
+    def parseStatements():
         children = []
-        if(Parser.tokens.actual.type == "SUB"):
-            Parser.tokens.selectNext()
-            if(Parser.tokens.actual.type == "MAIN"):
+        while(Parser.tokens.actual.type != "EOF"):
+            if(Parser.tokens.actual.type == "SUB"):
+                children.append(Parser.parseSubDec())
+            elif(Parser.tokens.actual.type == "FUNCTION"):
+                children.append(Parser.parseFuncDec())
+            else:
                 Parser.tokens.selectNext()
-                if(Parser.tokens.actual.type == "("):
-                    Parser.tokens.selectNext()
-                    if(Parser.tokens.actual.type == ")"):
-                        Parser.tokens.selectNext()
-                        if(Parser.tokens.actual.type == "EOL"):
-                            Parser.tokens.selectNext()
-                            while(True):
-                                if(Parser.tokens.actual.type == "END"):
-                                    Parser.tokens.selectNext()
-                                    break
-                                child = Parser.parseStatement()
-                                if(child != None):
-                                    children.append(child)
-                                if(Parser.tokens.actual.type == "EOL"):
-                                    Parser.tokens.selectNext()
-
-                            if(Parser.tokens.actual.type == "SUB"):
-                                Parser.tokens.selectNext()
-
-        program = Program(None, children)
-        return program
+        statements = Statements(None, children)
+        return statements
 
     @staticmethod
     def parseType():
@@ -746,6 +839,24 @@ class Parser:
                     Parser.tokens.selectNext()
                     type_node = Parser.parseType()
                     return VarDec(None, [ident_node, type_node])
+        elif(Parser.tokens.actual.type == "CALL"):
+            Parser.tokens.selectNext()
+            children = []
+            if(Parser.tokens.actual.type == "IDENTIFIER"):
+                name = Parser.tokens.actual.value
+                Parser.tokens.selectNext()
+                if(Parser.tokens.actual.type == "("):
+                    Parser.tokens.selectNext()
+                    while True:
+                        if(Parser.tokens.actual.type == ")"):
+                            Parser.tokens.selectNext()
+                            break
+                        else:
+                            children.append(Parser.parseRelExpression())
+                            if(Parser.tokens.actual.type == "COMMA"):
+                                Parser.tokens.selectNext()
+            node = SubFuncCall(name, children)
+            return node
 
         else:
             Parser.tokens.selectNext()
@@ -772,12 +883,103 @@ class Parser:
                 res = BinOp("LESSTHAN", [res, children1])
 
         return res
+
+    @staticmethod
+    def parseSubDec():
+        children = []
+        if(Parser.tokens.actual.type == "SUB"):
+            Parser.tokens.selectNext()
+            if(Parser.tokens.actual.type == "IDENTIFIER"):
+                name = Parser.tokens.actual.value
+                Parser.tokens.selectNext()
+                if(Parser.tokens.actual.type == "("):
+                    Parser.tokens.selectNext()
+                    while True:
+                        if(Parser.tokens.actual.type == ")"):
+                            Parser.tokens.selectNext()
+                            break
+                        else:
+                            if(Parser.tokens.actual.type == "IDENTIFIER"):
+                                varName = Identifier(Parser.tokens.actual.value, [])
+                                Parser.tokens.selectNext()
+                                if(Parser.tokens.actual.type == "AS"):
+                                    Parser.tokens.selectNext()
+                                    if(Parser.tokens.actual.type == "TYPE"):
+                                        varType = Parser.parseType()
+                                        children.append(VarDec("", [varName, varType]))
+                            if(Parser.tokens.actual.type == "COMMA"):
+                                Parser.tokens.selectNext()
+
+                    if(Parser.tokens.actual.type == "EOL"):
+                        Parser.tokens.selectNext()
+                        stmts = []
+                        while(True):
+                            if(Parser.tokens.actual.type == "END"):
+                                Parser.tokens.selectNext()
+                                break
+                            stmt = Parser.parseStatement()
+                            stmts.append(stmt)
+                            if(Parser.tokens.actual.type == "EOL"):
+                                Parser.tokens.selectNext()
+                        children.append(Statements(None, stmts))
+                        if(Parser.tokens.actual.type == "SUB"):
+                            Parser.tokens.selectNext()
+            node = SubDec(name, children)
+            return node
+            
+    @staticmethod
+    def parseFuncDec():
+        children = []
+        if(Parser.tokens.actual.type == "FUNCTION"):
+            Parser.tokens.selectNext()
+            if(Parser.tokens.actual.type == "IDENTIFIER"):
+                name = Parser.tokens.actual.value
+                Parser.tokens.selectNext()
+                if(Parser.tokens.actual.type == "("):
+                    Parser.tokens.selectNext()
+                    while True:
+                        if(Parser.tokens.actual.type == ")"):
+                            Parser.tokens.selectNext()
+                            break
+                        else:
+                            if(Parser.tokens.actual.type == "IDENTIFIER"):
+                                varName = Identifier(Parser.tokens.actual.value, [])
+                                Parser.tokens.selectNext()
+                                if(Parser.tokens.actual.type == "AS"):
+                                    Parser.tokens.selectNext()
+                                    if(Parser.tokens.actual.type == "TYPE"):
+                                        varType = Parser.parseType()
+                                        children.append(VarDec("", [varName, varType]))
+                        if(Parser.tokens.actual.type == "COMMA"):
+                            Parser.tokens.selectNext()
+                    if(Parser.tokens.actual.type == "AS"):
+                        Parser.tokens.selectNext()
+                        if(Parser.tokens.actual.type == "TYPE"):
+                            funcType = Parser.parseType() 
+                            children.insert(0, funcType)
+
+                    if(Parser.tokens.actual.type == "EOL"):
+                        Parser.tokens.selectNext()
+                        stmts = []
+                        while(True):
+                            if(Parser.tokens.actual.type == "END"):
+                                Parser.tokens.selectNext()
+                                break
+                            stmt = Parser.parseStatement()
+                            stmts.append(stmt)
+                            if(Parser.tokens.actual.type == "EOL"):
+                                Parser.tokens.selectNext()
+                        children.append(Statements(None, stmts))
+                        if(Parser.tokens.actual.type == "FUNCTION"):
+                            Parser.tokens.selectNext()
+            node = FuncDec(name, children)
+            return node
         
     @staticmethod
     def run(code):
         code = PrePro.filter(code)
         Parser.tokens = Tokenizer(code)
-        res = Parser.parseProgram()
+        res = Parser.parseStatements()
         if(Parser.tokens.actual.type == "EOF"):
             return res
         else:

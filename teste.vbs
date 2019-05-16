@@ -1,20 +1,15 @@
+Function Soma(x as Integer, y as Integer) as Integer
+    Dim a as Integer
+    a = x + y
+    Print a
+    Soma = a
+End Function
+
 Sub Main()
-
-Dim a as Integer
-Dim b as Integer
-Dim c as Integer
-a = 3
-b = 5
-
-print a * (b --1)
-
-if a < b then
-    print a
-end if
-
-if a > b then
-    print b
-else
-    print a
-end if
+    Dim a as Integer
+    Dim b as Integer
+    a = 3
+    b = Soma(a, 4)
+    Print a
+    Print b
 End Sub
