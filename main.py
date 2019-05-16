@@ -356,12 +356,12 @@ class SubFuncCall(Node):
     def Evaluate(self, symbolTable):
         pointer, type = symbolTable.get(self.value) #0: Value, 1: Type
         if(type == "SUB"):
-            st = SymbolTable()
-            st.create(self.value, pointer.children[0])
+            st = SymbolTable(parent=symbolTable)
+            st.create(self.value, pointer.children[0].Evaluate(st))
             for child in pointer.children[0:-1]: #Evaluate dos VarDecs
                 child.Evaluate(st) 
                 try:
-                    st.setValue(child.children[0].value, self.children[n])
+                    st.setValue(child.children[0].value, self.children[n].Evaluate(st)[0])
                     n += 1
                 except:
                     raise ValueError(f"""Sub {self.value} expected {len(pointer.children[1:-2])} arguments
@@ -369,19 +369,19 @@ class SubFuncCall(Node):
             pointer.children[-1].Evaluate(st)
 
         elif(type == "FUNC"):
-            st = SymbolTable()
-            st.create(self.value, pointer.children[0])
+            st = SymbolTable(parent=symbolTable)
+            st.create(self.value, pointer.children[0].Evaluate(st))
             n = 0 #variavel de deslocamento dos childrens do subcall em relacao ao children[1:-2]
             for child in pointer.children[1:-1]: #Evaluate dos VarDecs
                 child.Evaluate(st) 
                 try:
-                    st.setValue(child.children[0].value, self.children[n])
+                    st.setValue(child.children[0].value, self.children[n].Evaluate(st)[0])
                     n += 1
                 except:
                     raise ValueError(f"""Sub {self.value} expected {len(pointer.children[1:-2])} arguments
                                        but {len(self.children)} were given""")
             pointer.children[-1].Evaluate(st)
-            return st.get(self.value)[0]  
+            return st.get(self.value)
            
 
 class Token:
@@ -981,6 +981,7 @@ class Parser:
         Parser.tokens = Tokenizer(code)
         res = Parser.parseStatements()
         if(Parser.tokens.actual.type == "EOF"):
+            res.children.append(SubFuncCall("Main", []))
             return res
         else:
             raise ValueError("Error: Unexpected token")
@@ -997,15 +998,18 @@ class SymbolTable:
         key: name
         value: [value, type]
     """
-    def __init__(self):
+    def __init__(self, parent=None):
         self.symbolTable = {}
+        self.parent = parent
     
     """
     If name exists, returns (value, type)
     """
-    def get(self, name):
+    def get(self, name):  
         if(name in self.symbolTable.keys()):
             return (self.symbolTable[name][0], self.symbolTable[name][1])
+        elif(self.parent != None):
+            return self.parent.get(name)
         else:
             raise ValueError(name, " does not exists") 
     
@@ -1043,3 +1047,6 @@ with open(file_name) as file:
 symbolTable = SymbolTable()
 res = Parser.run(data)
 res.Evaluate(symbolTable)
+
+
+#Erro ta no SubFuncCall, a main ta sendo chamada 2 vezes
