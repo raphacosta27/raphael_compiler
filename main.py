@@ -354,10 +354,10 @@ class SubFuncCall(Node):
         self.children = children
     
     def Evaluate(self, symbolTable):
-        pointer, type = symbolTable.get(self.value) #0: Value, 1: Type
+        pointer, type = symbolTable.getPointer(self.value) #0: Value, 1: Type
         if(type == "SUB"):
             st = SymbolTable(parent=symbolTable)
-            st.create(self.value, pointer.children[0].Evaluate(st))
+            # st.create(self.value, "SUB")
             for child in pointer.children[0:-1]: #Evaluate dos VarDecs
                 child.Evaluate(st) 
                 try:
@@ -375,7 +375,7 @@ class SubFuncCall(Node):
             for child in pointer.children[1:-1]: #Evaluate dos VarDecs
                 child.Evaluate(st) 
                 try:
-                    st.setValue(child.children[0].value, self.children[n].Evaluate(st)[0])
+                    st.setValue(child.children[0].value, self.children[n].Evaluate(symbolTable)[0])
                     n += 1
                 except:
                     raise ValueError(f"""Sub {self.value} expected {len(pointer.children[1:-2])} arguments
@@ -1013,6 +1013,15 @@ class SymbolTable:
         else:
             raise ValueError(name, " does not exists") 
     
+    def getPointer(self, name):
+        # print(self.symbolTable.keys())
+        if(name in self.symbolTable.keys()):
+            if(self.symbolTable[name][1] == "SUB" or self.symbolTable[name][1] == "FUNC"):
+                return (self.symbolTable[name][0], self.symbolTable[name][1])        
+        return self.parent.getPointer(name)
+        # else:
+        #     raise ValueError(name, " does not exists") 
+
     """
     If name exists, creates {name: [None, type]} inside symbol Table
     Else, raise error
@@ -1047,6 +1056,3 @@ with open(file_name) as file:
 symbolTable = SymbolTable()
 res = Parser.run(data)
 res.Evaluate(symbolTable)
-
-
-#Erro ta no SubFuncCall, a main ta sendo chamada 2 vezes
