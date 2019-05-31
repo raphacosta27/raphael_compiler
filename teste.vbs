@@ -16,14 +16,6 @@ function fibonacci(n as integer) as integer
     end if
 
 end function
-
-' sub countdown(n as integer)
-'     if n>0 then
-'         print n
-'         call countdown(n-1)
-'     end if
-' end sub
-
 sub Main()
     print fibonacci(5)
 end sub
