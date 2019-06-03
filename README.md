@@ -1,4 +1,4 @@
-# Meta VBS Compiler in Python
+# Meta VBA Compiler in Python
 The purpose of this project is to implement a compiler for the Computer Logic subject. It was developed entirely by me, in Python, and the final goal was to simulate a VBScript(Visual Basic Script) compiler.
 
 ### Prerequisites
