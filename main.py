@@ -317,7 +317,7 @@ class SubDec(Node):
         self.children = children
     
     def Evaluate(self, symbolTable):
-        symbolTable.create(self.value, "SUB")#nome, tipo, valor
+        symbolTable.create(self.value.lower, "SUB")#nome, tipo, valor
         symbolTable.setValue(self.value, self)
 
 class FuncDec(Node):
@@ -332,7 +332,7 @@ class FuncDec(Node):
         self.children = children
     
     def Evaluate(self, symbolTable):
-        symbolTable.create(self.value, "FUNC")#nome, tipo, valor
+        symbolTable.create(self.value.lower, "FUNC")#nome, tipo, valor
         symbolTable.setValue(self.value, self)
 
 class SubFuncCall(Node):
@@ -354,14 +354,15 @@ class SubFuncCall(Node):
         self.children = children
     
     def Evaluate(self, symbolTable):
-        pointer, type = symbolTable.getPointer(self.value) #0: Value, 1: Type
+        pointer, type = symbolTable.getPointer(self.value.lower) #0: Value, 1: Type
         if(type == "SUB"):
             st = SymbolTable(parent=symbolTable)
             # st.create(self.value, "SUB")
+            n = 0
             for child in pointer.children[0:-1]: #Evaluate dos VarDecs
                 child.Evaluate(st) 
                 try:
-                    st.setValue(child.children[0].value, self.children[n].Evaluate(st)[0])
+                    st.setValue(child.children[0].value, self.children[n].Evaluate(symbolTable)[0])
                     n += 1
                 except:
                     raise ValueError(f"""Sub {self.value} expected {len(pointer.children[1:-2])} arguments
@@ -981,7 +982,7 @@ class Parser:
         Parser.tokens = Tokenizer(code)
         res = Parser.parseStatements()
         if(Parser.tokens.actual.type == "EOF"):
-            res.children.append(SubFuncCall("Main", []))
+            res.children.append(SubFuncCall("main", []))
             return res
         else:
             raise ValueError("Error: Unexpected token")
@@ -1046,7 +1047,7 @@ class SymbolTable:
 gettrace = getattr(sys, 'gettrace', None)
 if gettrace():
     #It's on debugger
-    file_name = "teste.vbs"
+    file_name = "teste4.vbs"
 else:
     file_name = str(sys.argv[1])
 
