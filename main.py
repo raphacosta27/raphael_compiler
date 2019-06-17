@@ -844,7 +844,7 @@ class Parser:
             Parser.tokens.selectNext()
             children = []
             if(Parser.tokens.actual.type == "IDENTIFIER"):
-                name = Parser.tokens.actual.value
+                name = Parser.tokens.actual.value.lower()
                 Parser.tokens.selectNext()
                 if(Parser.tokens.actual.type == "("):
                     Parser.tokens.selectNext()
@@ -891,7 +891,7 @@ class Parser:
         if(Parser.tokens.actual.type == "SUB"):
             Parser.tokens.selectNext()
             if(Parser.tokens.actual.type == "IDENTIFIER"):
-                name = Parser.tokens.actual.value
+                name = Parser.tokens.actual.value.lower()
                 Parser.tokens.selectNext()
                 if(Parser.tokens.actual.type == "("):
                     Parser.tokens.selectNext()
@@ -934,7 +934,7 @@ class Parser:
         if(Parser.tokens.actual.type == "FUNCTION"):
             Parser.tokens.selectNext()
             if(Parser.tokens.actual.type == "IDENTIFIER"):
-                name = Parser.tokens.actual.value
+                name = Parser.tokens.actual.value.lower()
                 Parser.tokens.selectNext()
                 if(Parser.tokens.actual.type == "("):
                     Parser.tokens.selectNext()
@@ -982,7 +982,7 @@ class Parser:
         Parser.tokens = Tokenizer(code)
         res = Parser.parseStatements()
         if(Parser.tokens.actual.type == "EOF"):
-            res.children.append(SubFuncCall("Main", []))
+            res.children.append(SubFuncCall("main", []))
             return res
         else:
             raise ValueError("Error: Unexpected token")

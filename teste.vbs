@@ -16,6 +16,6 @@ function fibonacci(n as integer) as integer
     end if
 
 end function
-sub Main()
+sub main()
     print fibonacci(5)
 end sub
