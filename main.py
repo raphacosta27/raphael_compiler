@@ -358,10 +358,11 @@ class SubFuncCall(Node):
         if(type == "SUB"):
             st = SymbolTable(parent=symbolTable)
             # st.create(self.value, "SUB")
+            n = 0
             for child in pointer.children[0:-1]: #Evaluate dos VarDecs
                 child.Evaluate(st) 
                 try:
-                    st.setValue(child.children[0].value, self.children[n].Evaluate(st)[0])
+                    st.setValue(child.children[0].value, self.children[n].Evaluate(symbolTable)[0])
                     n += 1
                 except:
                     raise ValueError(f"""Sub {self.value} expected {len(pointer.children[1:-2])} arguments
@@ -843,7 +844,7 @@ class Parser:
             Parser.tokens.selectNext()
             children = []
             if(Parser.tokens.actual.type == "IDENTIFIER"):
-                name = Parser.tokens.actual.value
+                name = Parser.tokens.actual.value.lower()
                 Parser.tokens.selectNext()
                 if(Parser.tokens.actual.type == "("):
                     Parser.tokens.selectNext()
@@ -890,7 +891,7 @@ class Parser:
         if(Parser.tokens.actual.type == "SUB"):
             Parser.tokens.selectNext()
             if(Parser.tokens.actual.type == "IDENTIFIER"):
-                name = Parser.tokens.actual.value
+                name = Parser.tokens.actual.value.lower()
                 Parser.tokens.selectNext()
                 if(Parser.tokens.actual.type == "("):
                     Parser.tokens.selectNext()
@@ -933,7 +934,7 @@ class Parser:
         if(Parser.tokens.actual.type == "FUNCTION"):
             Parser.tokens.selectNext()
             if(Parser.tokens.actual.type == "IDENTIFIER"):
-                name = Parser.tokens.actual.value
+                name = Parser.tokens.actual.value.lower()
                 Parser.tokens.selectNext()
                 if(Parser.tokens.actual.type == "("):
                     Parser.tokens.selectNext()
@@ -981,7 +982,7 @@ class Parser:
         Parser.tokens = Tokenizer(code)
         res = Parser.parseStatements()
         if(Parser.tokens.actual.type == "EOF"):
-            res.children.append(SubFuncCall("Main", []))
+            res.children.append(SubFuncCall("main", []))
             return res
         else:
             raise ValueError("Error: Unexpected token")
