@@ -317,7 +317,7 @@ class SubDec(Node):
         self.children = children
     
     def Evaluate(self, symbolTable):
-        symbolTable.create(self.value.lower, "SUB")#nome, tipo, valor
+        symbolTable.create(self.value, "SUB")#nome, tipo, valor
         symbolTable.setValue(self.value, self)
 
 class FuncDec(Node):
@@ -332,7 +332,7 @@ class FuncDec(Node):
         self.children = children
     
     def Evaluate(self, symbolTable):
-        symbolTable.create(self.value.lower, "FUNC")#nome, tipo, valor
+        symbolTable.create(self.value, "FUNC")#nome, tipo, valor
         symbolTable.setValue(self.value, self)
 
 class SubFuncCall(Node):
@@ -354,7 +354,7 @@ class SubFuncCall(Node):
         self.children = children
     
     def Evaluate(self, symbolTable):
-        pointer, type = symbolTable.getPointer(self.value.lower) #0: Value, 1: Type
+        pointer, type = symbolTable.getPointer(self.value) #0: Value, 1: Type
         if(type == "SUB"):
             st = SymbolTable(parent=symbolTable)
             # st.create(self.value, "SUB")
@@ -982,7 +982,7 @@ class Parser:
         Parser.tokens = Tokenizer(code)
         res = Parser.parseStatements()
         if(Parser.tokens.actual.type == "EOF"):
-            res.children.append(SubFuncCall("main", []))
+            res.children.append(SubFuncCall("Main", []))
             return res
         else:
             raise ValueError("Error: Unexpected token")
@@ -1047,7 +1047,7 @@ class SymbolTable:
 gettrace = getattr(sys, 'gettrace', None)
 if gettrace():
     #It's on debugger
-    file_name = "teste4.vbs"
+    file_name = "teste.vbs"
 else:
     file_name = str(sys.argv[1])
 
